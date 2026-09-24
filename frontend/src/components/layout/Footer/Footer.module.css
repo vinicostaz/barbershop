@@ -1,0 +1,37 @@
+.footer {
+  padding-block: 2.5rem;
+  color: var(--color-header-muted);
+  background: var(--color-header);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.description {
+  max-width: 30rem;
+  margin: 1rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.note {
+  flex-shrink: 0;
+  margin-block: 0;
+  text-align: right;
+}
+
+@media (max-width: 40rem) {
+  .content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .note {
+    text-align: left;
+  }
+}
