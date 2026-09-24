@@ -1,29 +1,33 @@
-// use prisma-8
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
 
 enum Role {
-  @@type("pg/text@1")
-  CLIENTE       = "CLIENTE"
-  BARBEIRO      = "BARBEIRO"
-  ADMINISTRADOR = "ADMINISTRADOR"
+  CLIENTE
+  BARBEIRO
+  ADMINISTRADOR
 }
 
 enum StatusAgendamento {
-  @@type("pg/text@1")
-  CONFIRMADO = "CONFIRMADO"
-  CANCELADO  = "CANCELADO"
-  CONCLUIDO  = "CONCLUIDO"
+  CONFIRMADO
+  CANCELADO
+  CONCLUIDO
 }
 
 enum StatusFila {
-  @@type("pg/text@1")
-  AGUARDANDO = "AGUARDANDO"
-  NOTIFICADO = "NOTIFICADO"
-  CONFIRMADO = "CONFIRMADO"
-  EXPIRADO   = "EXPIRADO"
+  AGUARDANDO
+  NOTIFICADO
+  CONFIRMADO
+  EXPIRADO
 }
 
 model Usuario {
-  id               Uuid     @id @default(uuid())
+  id               String   @id @default(uuid())
   nome             String
   email            String   @unique
   senhaHash        String
@@ -47,18 +51,18 @@ model Usuario {
 }
 
 model Servico {
-  id           Uuid          @id @default(uuid())
+  id           String        @id @default(uuid())
   nome         String
   descricao    String?
   duracaoMin   Int
-  preco        Numeric(10, 2)
+  preco        Decimal       @db.Decimal(10, 2)
   agendamentos Agendamento[]
 
   @@map("servicos")
 }
 
 model Especialidade {
-  id        Uuid                    @id @default(uuid())
+  id        String                  @id @default(uuid())
   nome      String                  @unique
   barbeiros BarbeiroEspecialidade[]
 
@@ -66,8 +70,8 @@ model Especialidade {
 }
 
 model BarbeiroEspecialidade {
-  barbeiroId      Uuid
-  especialidadeId Uuid
+  barbeiroId      String
+  especialidadeId String
   barbeiro        Usuario       @relation(fields: [barbeiroId], references: [id])
   especialidade   Especialidade @relation(fields: [especialidadeId], references: [id])
 
@@ -76,8 +80,8 @@ model BarbeiroEspecialidade {
 }
 
 model Disponibilidade {
-  id         Uuid    @id @default(uuid())
-  barbeiroId Uuid
+  id         String  @id @default(uuid())
+  barbeiroId String
   barbeiro   Usuario @relation("BarbeiroDisponibilidade", fields: [barbeiroId], references: [id])
   diaSemana  Int // 0 = domingo ... 6 = sábado
   horaInicio String // "09:00"
@@ -87,11 +91,11 @@ model Disponibilidade {
 }
 
 model Agendamento {
-  id         Uuid              @id @default(uuid())
-  clienteId  Uuid
-  barbeiroId Uuid
-  servicoId  Uuid
-  data       Date
+  id         String            @id @default(uuid())
+  clienteId  String
+  barbeiroId String
+  servicoId  String
+  data       DateTime          @db.Date
   horaInicio DateTime
   horaFim    DateTime
   status     StatusAgendamento @default(CONFIRMADO)
@@ -106,10 +110,10 @@ model Agendamento {
 }
 
 model FilaDeEspera {
-  id           Uuid       @id @default(uuid())
-  clienteId    Uuid
-  barbeiroId   Uuid
-  dataDesejada Date
+  id           String     @id @default(uuid())
+  clienteId    String
+  barbeiroId   String
+  dataDesejada DateTime   @db.Date
   status       StatusFila @default(AGUARDANDO)
   criadoEm     DateTime   @default(now())
 
@@ -119,9 +123,9 @@ model FilaDeEspera {
 }
 
 model Avaliacao {
-  id            Uuid     @id @default(uuid())
-  agendamentoId Uuid     @unique
-  clienteId     Uuid
+  id            String   @id @default(uuid())
+  agendamentoId String   @unique
+  clienteId     String
   nota          Int
   comentario    String?
   criadoEm      DateTime @default(now())
@@ -133,8 +137,8 @@ model Avaliacao {
 }
 
 model Favorito {
-  clienteId  Uuid
-  barbeiroId Uuid
+  clienteId  String
+  barbeiroId String
   cliente    Usuario @relation(fields: [clienteId], references: [id])
 
   @@id([clienteId, barbeiroId])
