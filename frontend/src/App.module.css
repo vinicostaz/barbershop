@@ -1,0 +1,26 @@
+.appShell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+}
+
+.skipLink {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  color: var(--color-surface);
+  background: var(--color-text);
+  border-radius: 0.5rem;
+  transform: translateY(-150%);
+  transition: transform 160ms ease;
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}
