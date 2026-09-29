@@ -1,29 +1,29 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
   color: inherit;
-  font-size: 1.125rem;
+  font-size: var(--font-size-lg);
   font-weight: 750;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.mark {
-  width: 2.25rem;
+.logo {
+  width: 2.75rem;
   aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  color: var(--color-header);
-  background: var(--color-accent);
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: 850;
-  letter-spacing: 0.04em;
+  box-sizing: border-box;
+  display: block;
+  padding: 0.3rem;
+  object-fit: contain;
+  background: var(--color-ivory-100);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.18);
 }
 
 .footer {
   width: fit-content;
-  color: var(--color-surface);
+  color: var(--color-text-on-dark);
 }

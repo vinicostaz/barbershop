@@ -1,34 +1,88 @@
 .section {
-  padding-block: clamp(3.5rem, 8vw, 6rem);
-  background: var(--color-surface);
+  padding-block: clamp(4.5rem, 9vw, 7rem);
+  background: var(--color-background);
 }
 
-.kicker {
-  margin: 0 0 1rem;
-  color: var(--color-accent-dark);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.headingLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(22rem, 1.1fr);
+  align-items: center;
+  gap: clamp(2.5rem, 7vw, 6rem);
+}
+
+.headingCopy {
+  max-width: 38rem;
 }
 
 .title {
-  max-width: 20ch;
-  margin: 0;
+  max-width: 16ch;
+  margin: var(--space-6) 0 0;
   color: var(--color-text);
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  line-height: 1.08;
-  letter-spacing: -0.045em;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.introduction {
+  max-width: 34rem;
+  margin: var(--space-6) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: 1.75;
+}
+
+.media {
+  position: relative;
+  min-height: 22rem;
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-navy-900);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(12, 22, 38, 0.78));
+}
+
+.media img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
+
+.media figcaption {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 1;
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-sm);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: clamp(2rem, 5vw, 3.5rem);
+  gap: var(--space-4);
+  margin-top: clamp(3rem, 7vw, 5rem);
 }
 
 @media (max-width: 56rem) {
+  .headingLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .media {
+    min-height: 20rem;
+  }
+
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -39,6 +93,11 @@
 }
 
 @media (max-width: 40rem) {
+  .media {
+    min-height: 17rem;
+    border-radius: var(--radius-lg);
+  }
+
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

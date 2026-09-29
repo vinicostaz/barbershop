@@ -15,9 +15,12 @@ export function Brand({ href = '#inicio', variant = 'default' }: BrandProps) {
 
   return (
     <a className={brandClasses} href={href} aria-label="BarberShop - início">
-      <span className={styles.mark} aria-hidden="true">
-        BS
-      </span>
+      <img
+        className={styles.logo}
+        src="/images/barbershop-logo.png"
+        alt=""
+        aria-hidden="true"
+      />
       <span>BarberShop</span>
     </a>
   )

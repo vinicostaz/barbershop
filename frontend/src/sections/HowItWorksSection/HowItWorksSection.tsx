@@ -1,22 +1,23 @@
+import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
 import { InformationCard } from '../../components/ui/InformationCard/InformationCard'
 import styles from './HowItWorksSection.module.css'
 
 const informationItems = [
   {
-    description: 'Veja as opções disponíveis antes de escolher seu horário.',
+    description: 'Compare as opções e escolha o cuidado que combina com você.',
     id: 'servicos',
     step: '01',
     title: 'Consulte os serviços',
   },
   {
-    description: 'Encontre o barbeiro adequado para o atendimento desejado.',
+    description: 'Conheça as especialidades e encontre seu profissional ideal.',
     id: 'profissionais',
     step: '02',
     title: 'Escolha o profissional',
   },
   {
-    description: 'Consulte as informações do atendimento em um único lugar.',
+    description: 'Confirme a data e acompanhe todas as informações em um só lugar.',
     id: 'agendamentos',
     step: '03',
     title: 'Acompanhe o agendamento',
@@ -31,10 +32,26 @@ export function HowItWorksSection() {
       aria-labelledby="titulo-como-funciona"
     >
       <Container>
-        <p className={styles.kicker}>Simples do início ao fim</p>
-        <h2 className={styles.title} id="titulo-como-funciona">
-          Organize seu atendimento em poucos passos
-        </h2>
+        <div className={styles.headingLayout}>
+          <div className={styles.headingCopy}>
+            <Badge tone="brown">Simples do início ao fim</Badge>
+            <h2 className={styles.title} id="titulo-como-funciona">
+              Cuidado nos detalhes, praticidade no agendamento.
+            </h2>
+            <p className={styles.introduction}>
+              Uma experiência pensada para você dedicar menos tempo à organização e
+              mais tempo ao resultado.
+            </p>
+          </div>
+
+          <figure className={styles.media}>
+            <img
+              src="/images/barber-tools.png"
+              alt="Ferramentas profissionais de barbearia organizadas sobre madeira escura"
+            />
+            <figcaption>Precisão profissional em cada atendimento.</figcaption>
+          </figure>
+        </div>
 
         <div className={styles.grid}>
           {informationItems.map((item) => (

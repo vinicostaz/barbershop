@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './Navigation.module.css'
 
 export type NavigationItem = {
@@ -18,23 +19,48 @@ const defaultItems: NavigationItem[] = [
 ]
 
 export function Navigation({ items = defaultItems }: NavigationProps) {
-  return (
-    <nav className={styles.navigation} aria-label="Navegação principal">
-      {items.map(({ href, label, variant = 'default' }) => {
-        const linkClasses = [
-          styles.link,
-          variant === 'active' ? styles.active : undefined,
-          variant === 'highlight' ? styles.highlight : undefined,
-        ]
-          .filter(Boolean)
-          .join(' ')
+  const [isOpen, setIsOpen] = useState(false)
 
-        return (
-          <a className={linkClasses} href={href} key={href}>
-            {label}
-          </a>
-        )
-      })}
-    </nav>
+  function closeMenu() {
+    setIsOpen(false)
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      <button
+        className={styles.menuButton}
+        type="button"
+        aria-controls="navegacao-principal"
+        aria-expanded={isOpen}
+        aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
+        onClick={() => setIsOpen((currentState) => !currentState)}
+      >
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+      </button>
+
+      <nav
+        className={`${styles.navigation} ${isOpen ? styles.open : ''}`}
+        id="navegacao-principal"
+        aria-label="Navegação principal"
+      >
+        {items.map(({ href, label, variant = 'default' }) => {
+          const linkClasses = [
+            styles.link,
+            variant === 'active' ? styles.active : undefined,
+            variant === 'highlight' ? styles.highlight : undefined,
+          ]
+            .filter(Boolean)
+            .join(' ')
+
+          return (
+            <a className={linkClasses} href={href} key={href} onClick={closeMenu}>
+              {label}
+            </a>
+          )
+        })}
+      </nav>
+    </div>
   )
 }

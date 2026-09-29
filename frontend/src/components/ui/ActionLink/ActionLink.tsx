@@ -3,7 +3,7 @@ import styles from './ActionLink.module.css'
 
 type ActionLinkProps = PropsWithChildren<{
   href: string
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'ghost'
 }>
 
 export function ActionLink({
