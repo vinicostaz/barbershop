@@ -1,0 +1,375 @@
+.hero {
+  padding-block: clamp(3rem, 7vw, 5.5rem);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(90, 67, 56, 0.12), transparent 26%),
+    var(--color-ivory-100);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.heroContent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.55fr);
+  align-items: end;
+  gap: var(--space-8);
+}
+
+.hero h1 {
+  max-width: 14ch;
+  margin: var(--space-5, 1.25rem) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 5.25rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.hero p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: 1.75;
+}
+
+.booking {
+  padding-block: clamp(3rem, 7vw, 6rem);
+  background: var(--color-surface);
+}
+
+.bookingLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.34fr);
+  align-items: start;
+  gap: var(--space-8);
+}
+
+.workflow {
+  min-width: 0;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress {
+  padding-bottom: var(--space-8);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.progress ol {
+  min-width: 35rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress button {
+  width: 100%;
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  color: var(--color-text-muted);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.progress button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.progress button span {
+  width: 2rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  background: var(--color-ivory-100);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.currentStep button {
+  color: var(--color-text);
+  font-weight: 750;
+}
+
+.currentStep button span {
+  color: var(--color-white);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.stepHeader {
+  margin-block: var(--space-8);
+}
+
+.stepHeader > span,
+.summaryEyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stepHeader h2,
+.summary h2,
+.confirmation h2 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.stepHeader h2 {
+  font-size: clamp(2.1rem, 4vw, 3.25rem);
+}
+
+.stepHeader p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.compactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.timeGrid button {
+  min-height: 4rem;
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.timeGrid button:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.timeGrid .selectedTime {
+  color: var(--color-white);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.review {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.review div {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5, 1.25rem);
+  background: var(--color-ivory-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.review dt,
+.summary dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.review dd,
+.summary dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 750;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.summary {
+  position: sticky;
+  top: 6.5rem;
+  padding: var(--space-8);
+  color: var(--color-text-on-dark);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(138, 116, 105, 0.28), transparent 34%),
+    var(--color-navy-950);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.summaryEyebrow {
+  color: var(--color-blue-300);
+}
+
+.summary h2 {
+  color: var(--color-text-on-dark);
+  font-size: 2.25rem;
+}
+
+.summary dl {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  margin: var(--space-8) 0 0;
+}
+
+.summary dl div {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.summary dt {
+  color: var(--color-text-on-dark-muted);
+}
+
+.summary dd {
+  color: var(--color-text-on-dark);
+}
+
+.total {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.total span {
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-xs);
+}
+
+.total strong {
+  font-size: var(--font-size-xl);
+}
+
+.confirmation {
+  min-height: 36rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  padding: clamp(1rem, 5vw, 4rem);
+}
+
+.confirmationIcon {
+  width: 4rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--space-8);
+  color: var(--color-white);
+  background: var(--color-success);
+  border-radius: 50%;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+}
+
+.confirmation h2 {
+  max-width: 15ch;
+  margin-top: var(--space-4);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.confirmation p {
+  max-width: 36rem;
+  margin: var(--space-5, 1.25rem) 0 var(--space-8);
+  color: var(--color-text-muted);
+  line-height: 1.75;
+}
+
+@media (max-width: 64rem) {
+  .heroContent,
+  .bookingLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero p {
+    max-width: 44rem;
+  }
+
+  .summary {
+    position: static;
+  }
+
+  .summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .hero,
+  .booking {
+    padding-block: var(--space-12) var(--space-16);
+  }
+
+  .hero h1 {
+    font-size: clamp(2.65rem, 13vw, 4rem);
+  }
+
+  .workflow,
+  .summary {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+  }
+
+  .optionsGrid,
+  .compactGrid,
+  .review,
+  .summary dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .timeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
