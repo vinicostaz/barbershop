@@ -18,8 +18,8 @@ export function HeroSection() {
           </p>
 
           <div className={styles.actions} aria-label="Ações principais">
-            <ActionLink href="#agendamentos">Agendar atendimento</ActionLink>
-            <ActionLink href="#servicos" variant="ghost">
+            <ActionLink to="/agendamentos">Agendar atendimento</ActionLink>
+            <ActionLink to="/servicos" variant="ghost">
               Conhecer serviços
             </ActionLink>
           </div>

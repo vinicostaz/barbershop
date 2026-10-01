@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { NavLink } from 'react-router'
 import styles from './Navigation.module.css'
 
 export type NavigationItem = {
-  href: string
   label: string
-  variant?: 'default' | 'active' | 'highlight'
+  to: string
+  variant?: 'default' | 'highlight'
 }
 
 type NavigationProps = {
@@ -12,10 +13,10 @@ type NavigationProps = {
 }
 
 const defaultItems: NavigationItem[] = [
-  { href: '#inicio', label: 'Início', variant: 'active' },
-  { href: '#servicos', label: 'Serviços' },
-  { href: '#profissionais', label: 'Profissionais' },
-  { href: '#agendamentos', label: 'Agendamentos', variant: 'highlight' },
+  { label: 'Início', to: '/' },
+  { label: 'Serviços', to: '/servicos' },
+  { label: 'Profissionais', to: '/profissionais' },
+  { label: 'Agendamentos', to: '/agendamentos', variant: 'highlight' },
 ]
 
 export function Navigation({ items = defaultItems }: NavigationProps) {
@@ -45,21 +46,25 @@ export function Navigation({ items = defaultItems }: NavigationProps) {
         id="navegacao-principal"
         aria-label="Navegação principal"
       >
-        {items.map(({ href, label, variant = 'default' }) => {
-          const linkClasses = [
-            styles.link,
-            variant === 'active' ? styles.active : undefined,
-            variant === 'highlight' ? styles.highlight : undefined,
-          ]
-            .filter(Boolean)
-            .join(' ')
-
-          return (
-            <a className={linkClasses} href={href} key={href} onClick={closeMenu}>
-              {label}
-            </a>
-          )
-        })}
+        {items.map(({ label, to, variant = 'default' }) => (
+          <NavLink
+            className={({ isActive }) =>
+              [
+                styles.link,
+                isActive ? styles.active : undefined,
+                variant === 'highlight' ? styles.highlight : undefined,
+              ]
+                .filter(Boolean)
+                .join(' ')
+            }
+            end={to === '/'}
+            key={to}
+            onClick={closeMenu}
+            to={to}
+          >
+            {label}
+          </NavLink>
+        ))}
       </nav>
     </div>
   )
