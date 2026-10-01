@@ -21,21 +21,9 @@
   line-height: 1.7;
 }
 
-.note {
-  flex-shrink: 0;
-  margin-block: 0;
-  color: var(--color-stone-500);
-  font-size: var(--font-size-sm);
-  text-align: right;
-}
-
 @media (max-width: 40rem) {
   .content {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .note {
-    text-align: left;
   }
 }
