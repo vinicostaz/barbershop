@@ -1,11 +1,12 @@
+import { Link } from 'react-router'
 import styles from './Brand.module.css'
 
 type BrandProps = {
-  href?: string
+  to?: string
   variant?: 'default' | 'footer'
 }
 
-export function Brand({ href = '#inicio', variant = 'default' }: BrandProps) {
+export function Brand({ to = '/', variant = 'default' }: BrandProps) {
   const brandClasses = [
     styles.brand,
     variant === 'footer' ? styles.footer : undefined,
@@ -14,7 +15,7 @@ export function Brand({ href = '#inicio', variant = 'default' }: BrandProps) {
     .join(' ')
 
   return (
-    <a className={brandClasses} href={href} aria-label="BarberShop - início">
+    <Link className={brandClasses} to={to} aria-label="BarberShop - início">
       <img
         className={styles.logo}
         src="/images/barbershop-logo.png"
@@ -22,6 +23,6 @@ export function Brand({ href = '#inicio', variant = 'default' }: BrandProps) {
         aria-hidden="true"
       />
       <span>BarberShop</span>
-    </a>
+    </Link>
   )
 }

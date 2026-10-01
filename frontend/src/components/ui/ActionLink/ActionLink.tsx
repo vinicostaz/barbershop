@@ -1,19 +1,20 @@
 import type { PropsWithChildren } from 'react'
+import { Link } from 'react-router'
 import styles from './ActionLink.module.css'
 
 type ActionLinkProps = PropsWithChildren<{
-  href: string
+  to: string
   variant?: 'primary' | 'secondary' | 'ghost'
 }>
 
 export function ActionLink({
   children,
-  href,
+  to,
   variant = 'primary',
 }: ActionLinkProps) {
   return (
-    <a className={`${styles.action} ${styles[variant]}`} href={href}>
+    <Link className={`${styles.action} ${styles[variant]}`} to={to}>
       {children}
-    </a>
+    </Link>
   )
 }
