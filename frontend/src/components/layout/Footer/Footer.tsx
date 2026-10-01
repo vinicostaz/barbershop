@@ -12,8 +12,6 @@ export function Footer() {
             Gestão e agendamento de atendimentos para barbearias.
           </p>
         </div>
-
-        <p className={styles.note}>Projeto Final Integrador</p>
       </Container>
     </footer>
   )
