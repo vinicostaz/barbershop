@@ -13,5 +13,8 @@ agendamentosRoutes.get("/", asyncHandler(agendamentosController.listar));
 // UC06 - Realizar agendamento
 agendamentosRoutes.post("/", asyncHandler(agendamentosController.criar));
 
+// UC08 - Reagendar atendimento
+agendamentosRoutes.patch("/:id/reagendar", asyncHandler(agendamentosController.reagendar));
+
 // UC07 - Cancelar agendamento
 agendamentosRoutes.patch("/:id/cancelar", asyncHandler(agendamentosController.cancelar));
