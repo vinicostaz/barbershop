@@ -7,6 +7,14 @@ export const disponibilidadesRoutes = Router();
 
 // UC05 - Consultar disponibilidade (público, cliente precisa ver antes de agendar)
 disponibilidadesRoutes.get(
+  "/barbeiros/:barbeiroId/datas",
+  asyncHandler(disponibilidadesController.listarDatasDisponiveis)
+);
+disponibilidadesRoutes.get(
+  "/barbeiros/:barbeiroId/horarios",
+  asyncHandler(disponibilidadesController.listarHorariosLivres)
+);
+disponibilidadesRoutes.get(
   "/barbeiros/:barbeiroId",
   asyncHandler(disponibilidadesController.listarPorBarbeiro)
 );

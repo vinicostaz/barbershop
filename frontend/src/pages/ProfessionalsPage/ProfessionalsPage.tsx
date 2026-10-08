@@ -1,11 +1,51 @@
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../auth/useAuth'
 import { ActionLink } from '../../components/ui/ActionLink/ActionLink'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { Container } from '../../components/ui/Container/Container'
 import { ProfessionalCard } from '../../components/ui/ProfessionalCard/ProfessionalCard'
-import { professionals } from '../../data/professionals'
+import {
+  catalogService,
+  type Professional,
+} from '../../services/catalog'
 import styles from './ProfessionalsPage.module.css'
 
 export function ProfessionalsPage() {
+  const { session } = useAuth()
+  const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  const canSchedule = !session || session.usuario.role === 'CLIENTE'
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadProfessionals() {
+      setError('')
+      setIsLoading(true)
+
+      try {
+        setProfessionals(
+          await catalogService.listProfessionals(controller.signal),
+        )
+      } catch (requestError) {
+        if (controller.signal.aborted) return
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Não foi possível carregar os profissionais.',
+        )
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
+      }
+    }
+
+    void loadProfessionals()
+    return () => controller.abort()
+  }, [reloadKey])
+
   return (
     <>
       <section className={styles.hero} aria-labelledby="titulo-profissionais">
@@ -69,19 +109,43 @@ export function ProfessionalsPage() {
             </p>
           </header>
 
-          <div className={styles.grid}>
-            {professionals.map((professional, index) => (
-              <ProfessionalCard
-                description={professional.description}
-                id={professional.id}
-                index={index + 1}
-                initials={professional.initials}
-                key={professional.id}
-                name={professional.name}
-                specialties={professional.specialties}
-              />
-            ))}
-          </div>
+          {isLoading && (
+            <div className={styles.dataState} role="status">
+              Carregando profissionais...
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className={styles.dataState} role="alert">
+              <p>{error}</p>
+              <Button onClick={() => setReloadKey((key) => key + 1)}>
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
+          {!isLoading && !error && professionals.length === 0 && (
+            <div className={styles.dataState} role="status">
+              Nenhum profissional está disponível no momento.
+            </div>
+          )}
+
+          {!isLoading && !error && professionals.length > 0 && (
+            <div className={styles.grid}>
+              {professionals.map((professional, index) => (
+                <ProfessionalCard
+                  canSchedule={canSchedule}
+                  description={professional.description}
+                  id={professional.id}
+                  index={index + 1}
+                  initials={professional.initials}
+                  key={professional.id}
+                  name={professional.name}
+                  specialties={professional.specialties}
+                />
+              ))}
+            </div>
+          )}
 
           <aside className={styles.callout}>
             <div>

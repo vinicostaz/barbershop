@@ -16,7 +16,7 @@ export function ProfileRoute({ allowedRoles, children }: ProfileRouteProps) {
     return (
       <Navigate
         replace
-        state={{ requestedPath: location.pathname }}
+        state={{ requestedPath: `${location.pathname}${location.search}` }}
         to="/login"
       />
     )

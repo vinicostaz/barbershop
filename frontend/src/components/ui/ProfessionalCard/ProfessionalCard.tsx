@@ -2,6 +2,7 @@ import { ActionLink } from '../ActionLink/ActionLink'
 import styles from './ProfessionalCard.module.css'
 
 type ProfessionalCardProps = {
+  canSchedule: boolean
   description: string
   id: string
   index: number
@@ -11,6 +12,7 @@ type ProfessionalCardProps = {
 }
 
 export function ProfessionalCard({
+  canSchedule,
   description,
   id,
   index,
@@ -38,16 +40,27 @@ export function ProfessionalCard({
       </div>
 
       <ul className={styles.specialties} aria-label={`Especialidades de ${name}`}>
-        {specialties.map((specialty) => (
+        {(specialties.length > 0
+          ? specialties
+          : ['Especialidades em atualização']
+        ).map((specialty) => (
           <li key={specialty}>{specialty}</li>
         ))}
       </ul>
 
       <footer className={styles.footer}>
-        <span>Escolha seu especialista</span>
-        <ActionLink to={`/agendamentos?profissional=${id}`}>
-          Selecionar
-        </ActionLink>
+        {canSchedule ? (
+          <>
+            <span>Escolha seu especialista</span>
+            <ActionLink to={`/agendamentos?profissional=${id}`}>
+              Selecionar
+            </ActionLink>
+          </>
+        ) : (
+          <span className={styles.restrictedAction}>
+            Seleção para agendamento disponível somente para clientes
+          </span>
+        )}
       </footer>
     </article>
   )

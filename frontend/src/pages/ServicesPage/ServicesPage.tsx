@@ -1,11 +1,46 @@
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../auth/useAuth'
 import { ActionLink } from '../../components/ui/ActionLink/ActionLink'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { Container } from '../../components/ui/Container/Container'
 import { ServiceCard } from '../../components/ui/ServiceCard/ServiceCard'
-import { services } from '../../data/services'
+import { catalogService, type Service } from '../../services/catalog'
 import styles from './ServicesPage.module.css'
 
 export function ServicesPage() {
+  const { session } = useAuth()
+  const [services, setServices] = useState<Service[]>([])
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  const canSchedule = !session || session.usuario.role === 'CLIENTE'
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadServices() {
+      setError('')
+      setIsLoading(true)
+
+      try {
+        setServices(await catalogService.listServices(controller.signal))
+      } catch (requestError) {
+        if (controller.signal.aborted) return
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Não foi possível carregar os serviços.',
+        )
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
+      }
+    }
+
+    void loadServices()
+    return () => controller.abort()
+  }, [reloadKey])
+
   return (
     <>
       <section className={styles.hero} aria-labelledby="titulo-servicos">
@@ -51,19 +86,43 @@ export function ServicesPage() {
             </p>
           </header>
 
-          <div className={styles.grid}>
-            {services.map((service, index) => (
-              <ServiceCard
-                description={service.descricao}
-                duration={service.duracaoMin}
-                id={service.id}
-                index={index + 1}
-                key={service.id}
-                name={service.nome}
-                price={service.preco}
-              />
-            ))}
-          </div>
+          {isLoading && (
+            <div className={styles.dataState} role="status">
+              Carregando serviços...
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className={styles.dataState} role="alert">
+              <p>{error}</p>
+              <Button onClick={() => setReloadKey((key) => key + 1)}>
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
+          {!isLoading && !error && services.length === 0 && (
+            <div className={styles.dataState} role="status">
+              Nenhum serviço está disponível no momento.
+            </div>
+          )}
+
+          {!isLoading && !error && services.length > 0 && (
+            <div className={styles.grid}>
+              {services.map((service, index) => (
+                <ServiceCard
+                  canSchedule={canSchedule}
+                  description={service.descricao}
+                  duration={service.duracaoMin}
+                  id={service.id}
+                  index={index + 1}
+                  key={service.id}
+                  name={service.nome}
+                  price={service.preco}
+                />
+              ))}
+            </div>
+          )}
 
           <aside className={styles.callout}>
             <div>
