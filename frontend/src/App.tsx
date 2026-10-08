@@ -4,6 +4,7 @@ import styles from './App.module.css'
 import { Footer } from './components/layout/Footer/Footer'
 import { Header } from './components/layout/Header/Header'
 import { AppointmentsPage } from './pages/AppointmentsPage/AppointmentsPage'
+import { AuthPage } from './pages/AuthPage/AuthPage'
 import { HomePage } from './pages/HomePage/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage'
 import { ProfessionalsPage } from './pages/ProfessionalsPage/ProfessionalsPage'
@@ -12,6 +13,8 @@ import { ServicesPage } from './pages/ServicesPage/ServicesPage'
 const pageTitles: Record<string, string> = {
   '/': 'BarberShop',
   '/agendamentos': 'Agendamentos | BarberShop',
+  '/cadastro': 'Criar conta | BarberShop',
+  '/login': 'Entrar | BarberShop',
   '/profissionais': 'Profissionais | BarberShop',
   '/servicos': 'Serviços | BarberShop',
 }
@@ -35,6 +38,11 @@ function App() {
       <main className={styles.main} id="conteudo-principal">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<AuthPage key="login" mode="login" />} />
+          <Route
+            path="/cadastro"
+            element={<AuthPage key="register" mode="register" />}
+          />
           <Route path="/servicos" element={<ServicesPage />} />
           <Route path="/profissionais" element={<ProfessionalsPage />} />
           <Route path="/agendamentos" element={<AppointmentsPage />} />

@@ -22,14 +22,35 @@ function FieldText({ error, hint }: Pick<FieldMetadata, 'error' | 'hint'>) {
   return <span className={error ? styles.error : styles.hint}>{error ?? hint}</span>
 }
 
-export function TextField({ error, hint, id, label, ...props }: TextFieldProps) {
+function FieldLabel({ label, required }: Pick<FieldMetadata, 'label'> & { required?: boolean }) {
+  return (
+    <span className={styles.label}>
+      {label}
+      {required && (
+        <span aria-hidden="true" className={styles.requiredIndicator}>
+          {' '}*
+        </span>
+      )}
+    </span>
+  )
+}
+
+export function TextField({
+  error,
+  hint,
+  id,
+  label,
+  required,
+  ...props
+}: TextFieldProps) {
   return (
     <label className={styles.field} htmlFor={id}>
-      <span className={styles.label}>{label}</span>
+      <FieldLabel label={label} required={required} />
       <input
         aria-invalid={Boolean(error)}
         className={styles.control}
         id={id}
+        required={required}
         {...props}
       />
       <FieldText error={error} hint={hint} />
@@ -42,15 +63,17 @@ export function TextareaField({
   hint,
   id,
   label,
+  required,
   ...props
 }: TextareaFieldProps) {
   return (
     <label className={styles.field} htmlFor={id}>
-      <span className={styles.label}>{label}</span>
+      <FieldLabel label={label} required={required} />
       <textarea
         aria-invalid={Boolean(error)}
         className={`${styles.control} ${styles.textarea}`}
         id={id}
+        required={required}
         {...props}
       />
       <FieldText error={error} hint={hint} />
@@ -64,15 +87,17 @@ export function SelectField({
   hint,
   id,
   label,
+  required,
   ...props
 }: SelectFieldProps) {
   return (
     <label className={styles.field} htmlFor={id}>
-      <span className={styles.label}>{label}</span>
+      <FieldLabel label={label} required={required} />
       <select
         aria-invalid={Boolean(error)}
         className={styles.control}
         id={id}
+        required={required}
         {...props}
       >
         {children}
