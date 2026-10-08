@@ -52,11 +52,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   async function login(input: LoginInput) {
-    saveSession(await authService.login(input))
+    const nextSession = await authService.login(input)
+    saveSession(nextSession)
+    return nextSession
   }
 
   async function register(input: RegisterInput) {
-    saveSession(await authService.register(input))
+    const nextSession = await authService.register(input)
+    saveSession(nextSession)
+    return nextSession
   }
 
   function logout() {

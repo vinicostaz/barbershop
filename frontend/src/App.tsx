@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router'
+import { ProfileRoute } from './auth/ProfileRoute'
 import styles from './App.module.css'
 import { Footer } from './components/layout/Footer/Footer'
 import { Header } from './components/layout/Header/Header'
+import { RoutePage } from './components/layout/RoutePage/RoutePage'
+import { AdminPage } from './pages/AdminPage/AdminPage'
 import { AppointmentsPage } from './pages/AppointmentsPage/AppointmentsPage'
 import { AuthPage } from './pages/AuthPage/AuthPage'
 import { HomePage } from './pages/HomePage/HomePage'
@@ -12,10 +15,12 @@ import { ServicesPage } from './pages/ServicesPage/ServicesPage'
 
 const pageTitles: Record<string, string> = {
   '/': 'BarberShop',
+  '/admin': 'Administração | BarberShop',
   '/agendamentos': 'Agendamentos | BarberShop',
   '/cadastro': 'Criar conta | BarberShop',
   '/login': 'Entrar | BarberShop',
   '/profissionais': 'Profissionais | BarberShop',
+  '/profissional': 'Área profissional | BarberShop',
   '/servicos': 'Serviços | BarberShop',
 }
 
@@ -45,7 +50,36 @@ function App() {
           />
           <Route path="/servicos" element={<ServicesPage />} />
           <Route path="/profissionais" element={<ProfessionalsPage />} />
-          <Route path="/agendamentos" element={<AppointmentsPage />} />
+          <Route
+            path="/agendamentos"
+            element={
+              <ProfileRoute
+                allowedRoles={['CLIENTE', 'BARBEIRO', 'ADMINISTRADOR']}
+              >
+                <AppointmentsPage />
+              </ProfileRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProfileRoute allowedRoles={['ADMINISTRADOR']}>
+                <AdminPage />
+              </ProfileRoute>
+            }
+          />
+          <Route
+            path="/profissional"
+            element={
+              <ProfileRoute allowedRoles={['BARBEIRO', 'ADMINISTRADOR']}>
+                <RoutePage
+                  description="Consulte sua rotina profissional e acompanhe os atendimentos vinculados ao seu perfil."
+                  eyebrow="Área profissional"
+                  title="Sua agenda de trabalho organizada."
+                />
+              </ProfileRoute>
+            }
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

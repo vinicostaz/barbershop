@@ -7,9 +7,9 @@ import type {
 
 export type AuthContextValue = {
   isAuthenticated: boolean
-  login: (input: LoginInput) => Promise<void>
+  login: (input: LoginInput) => Promise<AuthSession>
   logout: () => void
-  register: (input: RegisterInput) => Promise<void>
+  register: (input: RegisterInput) => Promise<AuthSession>
   session: AuthSession | null
 }
 
