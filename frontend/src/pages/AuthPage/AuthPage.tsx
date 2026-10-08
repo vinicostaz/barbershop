@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { getRoleHomePath } from '../../auth/roleRoutes'
 import { useAuth } from '../../auth/useAuth'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -72,7 +73,7 @@ function getErrorMessage(error: unknown, isLogin: boolean) {
 export function AuthPage({ mode }: AuthPageProps) {
   const isLogin = mode === 'login'
   const navigate = useNavigate()
-  const { isAuthenticated, login, register } = useAuth()
+  const { isAuthenticated, login, register, session } = useAuth()
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
@@ -86,8 +87,8 @@ export function AuthPage({ mode }: AuthPageProps) {
     ? validateForm({ confirmacaoSenha, email, isLogin, nome, senha })
     : {}
 
-  if (isAuthenticated) {
-    return <Navigate replace to={isLogin ? '/' : '/agendamentos'} />
+  if (isAuthenticated && session) {
+    return <Navigate replace to={getRoleHomePath(session.usuario.role)} />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -109,16 +110,16 @@ export function AuthPage({ mode }: AuthPageProps) {
 
     try {
       if (isLogin) {
-        await login({ email: email.trim(), senha })
-        navigate('/', { replace: true })
+        const nextSession = await login({ email: email.trim(), senha })
+        navigate(getRoleHomePath(nextSession.usuario.role), { replace: true })
       } else {
-        await register({
+        const nextSession = await register({
           email: email.trim(),
           nome: nome.trim(),
           senha,
           telefone: telefone.trim() || undefined,
         })
-        navigate('/agendamentos', { replace: true })
+        navigate(getRoleHomePath(nextSession.usuario.role), { replace: true })
       }
     } catch (error) {
       setFormError(getErrorMessage(error, isLogin))

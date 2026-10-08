@@ -1,0 +1,201 @@
+.page {
+  min-height: calc(100svh - 5rem);
+  padding-block: clamp(var(--space-12), 8vw, var(--space-24));
+  background:
+    radial-gradient(circle at 88% 8%, rgba(141, 167, 192, 0.18), transparent 28rem),
+    linear-gradient(150deg, var(--color-ivory-50), var(--color-ivory-100));
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+  align-items: end;
+  gap: clamp(var(--space-8), 7vw, var(--space-24));
+}
+
+.heroCopy {
+  max-width: 52rem;
+}
+
+.heroCopy h1 {
+  max-width: 13ch;
+  margin: var(--space-6) 0 0;
+  color: var(--color-navy-950);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 5.6rem);
+  font-weight: 400;
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+}
+
+.heroCopy p {
+  max-width: 43rem;
+  margin: var(--space-6) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: 1.75;
+}
+
+.accessCard {
+  padding: var(--space-6);
+  color: var(--color-text-on-dark);
+  background: var(--color-navy-950);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.accessLabel,
+.sectionHeading span,
+.moduleStatus {
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.accessLabel {
+  display: block;
+  color: var(--color-blue-300);
+}
+
+.accessCard strong {
+  display: block;
+  margin-top: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+}
+
+.accessCard p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-top: clamp(var(--space-16), 9vw, var(--space-24));
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionHeading span {
+  color: var(--color-secondary);
+}
+
+.sectionHeading h2 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 400;
+}
+
+.sectionHeading p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+  text-align: right;
+}
+
+.moduleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.moduleCard {
+  min-width: 0;
+  min-height: 18rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.moduleNumber {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.moduleStatus {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 9%, white);
+  border-radius: var(--radius-pill);
+}
+
+.moduleCard h3 {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+}
+
+.moduleCard p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+}
+
+@media (max-width: 64rem) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .accessCard {
+    max-width: 30rem;
+  }
+
+  .moduleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .page {
+    padding-block: var(--space-12) var(--space-16);
+  }
+
+  .heroCopy h1 {
+    max-width: none;
+    font-size: clamp(2.7rem, 13vw, 4rem);
+  }
+
+  .heroCopy p {
+    font-size: var(--font-size-md);
+  }
+
+  .sectionHeading {
+    display: grid;
+    align-items: start;
+  }
+
+  .sectionHeading p {
+    text-align: left;
+  }
+
+  .moduleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .moduleCard {
+    min-height: 15rem;
+  }
+}

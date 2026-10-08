@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router'
 import { useAuth } from '../../../auth/useAuth'
+import type { UserRole } from '../../../services/auth'
 import styles from './Navigation.module.css'
 
 export type NavigationItem = {
@@ -13,16 +14,37 @@ type NavigationProps = {
   items?: NavigationItem[]
 }
 
-const defaultItems: NavigationItem[] = [
+const publicItems: NavigationItem[] = [
   { label: 'Início', to: '/' },
   { label: 'Serviços', to: '/servicos' },
   { label: 'Profissionais', to: '/profissionais' },
   { label: 'Agendamentos', to: '/agendamentos', variant: 'highlight' },
 ]
 
-export function Navigation({ items = defaultItems }: NavigationProps) {
+const profileItems: Record<UserRole, NavigationItem[]> = {
+  ADMINISTRADOR: [
+    { label: 'Início', to: '/' },
+    { label: 'Serviços', to: '/servicos' },
+    { label: 'Profissionais', to: '/profissionais' },
+    { label: 'Agendamentos', to: '/agendamentos' },
+    { label: 'Área profissional', to: '/profissional' },
+    { label: 'Administração', to: '/admin', variant: 'highlight' },
+  ],
+  BARBEIRO: [
+    { label: 'Início', to: '/' },
+    { label: 'Serviços', to: '/servicos' },
+    { label: 'Profissionais', to: '/profissionais' },
+    { label: 'Agendamentos', to: '/agendamentos' },
+    { label: 'Minha área', to: '/profissional', variant: 'highlight' },
+  ],
+  CLIENTE: publicItems,
+}
+
+export function Navigation({ items }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { logout, session } = useAuth()
+  const navigationItems =
+    items ?? (session ? profileItems[session.usuario.role] : publicItems)
 
   function closeMenu() {
     setIsOpen(false)
@@ -53,7 +75,7 @@ export function Navigation({ items = defaultItems }: NavigationProps) {
         id="navegacao-principal"
         aria-label="Navegação principal"
       >
-        {items.map(({ label, to, variant = 'default' }) => (
+        {navigationItems.map(({ label, to, variant = 'default' }) => (
           <NavLink
             className={({ isActive }) =>
               [

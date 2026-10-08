@@ -100,7 +100,7 @@
   transition: transform var(--transition-fast);
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 72rem) {
   .menuButton {
     display: grid;
   }

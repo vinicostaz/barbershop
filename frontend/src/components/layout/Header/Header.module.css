@@ -16,7 +16,7 @@
   gap: var(--space-8);
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 72rem) {
   .content {
     min-height: 4.5rem;
     gap: var(--space-4);
