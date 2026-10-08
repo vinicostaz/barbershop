@@ -86,4 +86,4 @@ else
 fi
 
 echo "Iniciando backend..."
-tsx watch src/server.ts
+npm run dev

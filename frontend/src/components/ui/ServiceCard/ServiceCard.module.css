@@ -94,6 +94,15 @@
   font-size: var(--font-size-xl);
 }
 
+.restrictedAction {
+  max-width: 11rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: right;
+}
+
 @media (max-width: 40rem) {
   .card {
     min-height: 23rem;
@@ -102,5 +111,10 @@
   .footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .restrictedAction {
+    max-width: none;
+    text-align: left;
   }
 }

@@ -112,6 +112,12 @@
   font-size: var(--font-size-xs);
 }
 
+.footer .restrictedAction {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 @media (max-width: 40rem) {
   .card {
     min-height: 27rem;

@@ -18,6 +18,19 @@ export const agendamentosRepository = {
     });
   },
 
+  findConfirmadosNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.agendamento.findMany({
+      where: {
+        barbeiroId,
+        status: "CONFIRMADO",
+        horaInicio: { lt: fim },
+        horaFim: { gt: inicio },
+      },
+      select: { horaInicio: true, horaFim: true },
+      orderBy: { horaInicio: "asc" },
+    });
+  },
+
   create(data: {
     clienteId: string;
     barbeiroId: string;

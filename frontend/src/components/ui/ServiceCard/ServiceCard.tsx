@@ -2,6 +2,7 @@ import { ActionLink } from '../ActionLink/ActionLink'
 import styles from './ServiceCard.module.css'
 
 type ServiceCardProps = {
+  canSchedule: boolean
   description: string
   duration: number
   id: string
@@ -17,6 +18,7 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 })
 
 export function ServiceCard({
+  canSchedule,
   description,
   duration,
   id,
@@ -45,7 +47,13 @@ export function ServiceCard({
           <span className={styles.priceLabel}>A partir de</span>
           <strong>{currencyFormatter.format(price)}</strong>
         </div>
-        <ActionLink to={`/agendamentos?servico=${id}`}>Agendar</ActionLink>
+        {canSchedule ? (
+          <ActionLink to={`/agendamentos?servico=${id}`}>Agendar</ActionLink>
+        ) : (
+          <span className={styles.restrictedAction}>
+            Agendamento disponível para clientes
+          </span>
+        )}
       </footer>
     </article>
   )

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { getRoleHomePath } from '../../auth/roleRoutes'
 import { useAuth } from '../../auth/useAuth'
 import { Badge } from '../../components/ui/Badge/Badge'
@@ -13,6 +13,10 @@ type AuthMode = 'login' | 'register'
 
 type AuthPageProps = {
   mode: AuthMode
+}
+
+type AuthLocationState = {
+  requestedPath?: string
 }
 
 type FormErrors = Partial<
@@ -72,6 +76,7 @@ function getErrorMessage(error: unknown, isLogin: boolean) {
 
 export function AuthPage({ mode }: AuthPageProps) {
   const isLogin = mode === 'login'
+  const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, login, register, session } = useAuth()
   const [nome, setNome] = useState('')
@@ -83,12 +88,25 @@ export function AuthPage({ mode }: AuthPageProps) {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const locationState = location.state as AuthLocationState | null
+  const requestedPath =
+    typeof locationState?.requestedPath === 'string' &&
+    locationState.requestedPath.startsWith('/') &&
+    !locationState.requestedPath.startsWith('//')
+      ? locationState.requestedPath
+      : null
+
   const formErrors = hasSubmitted
     ? validateForm({ confirmacaoSenha, email, isLogin, nome, senha })
     : {}
 
   if (isAuthenticated && session) {
-    return <Navigate replace to={getRoleHomePath(session.usuario.role)} />
+    return (
+      <Navigate
+        replace
+        to={requestedPath ?? getRoleHomePath(session.usuario.role)}
+      />
+    )
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -111,7 +129,10 @@ export function AuthPage({ mode }: AuthPageProps) {
     try {
       if (isLogin) {
         const nextSession = await login({ email: email.trim(), senha })
-        navigate(getRoleHomePath(nextSession.usuario.role), { replace: true })
+        navigate(
+          requestedPath ?? getRoleHomePath(nextSession.usuario.role),
+          { replace: true },
+        )
       } else {
         const nextSession = await register({
           email: email.trim(),
@@ -119,7 +140,10 @@ export function AuthPage({ mode }: AuthPageProps) {
           senha,
           telefone: telefone.trim() || undefined,
         })
-        navigate(getRoleHomePath(nextSession.usuario.role), { replace: true })
+        navigate(
+          requestedPath ?? getRoleHomePath(nextSession.usuario.role),
+          { replace: true },
+        )
       }
     } catch (error) {
       setFormError(getErrorMessage(error, isLogin))
@@ -144,6 +168,15 @@ export function AuthPage({ mode }: AuthPageProps) {
               : 'Cadastre-se para escolher serviços, profissionais e horários com mais praticidade.'}
           </p>
 
+          {isLogin && (
+            <div className={styles.registerCallout}>
+              <span>Ainda não possui cadastro?</span>
+              <Link state={location.state} to="/cadastro">
+                Criar conta
+              </Link>
+            </div>
+          )}
+
           <ul className={styles.benefits}>
             <li>Agendamento organizado</li>
             <li>Acesso seguro à sua conta</li>
@@ -157,17 +190,14 @@ export function AuthPage({ mode }: AuthPageProps) {
               {isLogin ? 'Boas-vindas' : 'Novo cadastro'}
             </span>
             <h2>{isLogin ? 'Entrar na sua conta' : 'Criar sua conta'}</h2>
-            <p>
-              {isLogin ? (
-                <>
-                  Ainda não possui cadastro? <Link to="/cadastro">Criar conta</Link>
-                </>
-              ) : (
-                <>
-                  Já possui uma conta? <Link to="/login">Entrar</Link>
-                </>
-              )}
-            </p>
+            {!isLogin && (
+              <p>
+                Já possui uma conta?{' '}
+                <Link state={location.state} to="/login">
+                  Entrar
+                </Link>
+              </p>
+            )}
           </header>
 
           <form className={styles.form} noValidate onSubmit={handleSubmit}>
