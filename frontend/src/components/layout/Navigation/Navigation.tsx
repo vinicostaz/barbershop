@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router'
+import { useAuth } from '../../../auth/useAuth'
 import styles from './Navigation.module.css'
 
 export type NavigationItem = {
@@ -21,9 +22,15 @@ const defaultItems: NavigationItem[] = [
 
 export function Navigation({ items = defaultItems }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const { logout, session } = useAuth()
 
   function closeMenu() {
     setIsOpen(false)
+  }
+
+  function handleLogout() {
+    logout()
+    closeMenu()
   }
 
   return (
@@ -65,6 +72,29 @@ export function Navigation({ items = defaultItems }: NavigationProps) {
             {label}
           </NavLink>
         ))}
+
+        {session ? (
+          <div className={styles.session}>
+            <span className={styles.userName} title={session.usuario.nome}>
+              Olá, {session.usuario.nome.split(' ')[0]}
+            </span>
+            <button className={styles.logout} onClick={handleLogout} type="button">
+              Sair
+            </button>
+          </div>
+        ) : (
+          <NavLink
+            className={({ isActive }) =>
+              [styles.link, isActive ? styles.active : undefined]
+                .filter(Boolean)
+                .join(' ')
+            }
+            onClick={closeMenu}
+            to="/login"
+          >
+            Entrar
+          </NavLink>
+        )}
       </nav>
     </div>
   )

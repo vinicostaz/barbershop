@@ -9,6 +9,10 @@
   font-weight: 700;
 }
 
+.requiredIndicator {
+  color: var(--color-error);
+}
+
 .control {
   width: 100%;
   min-height: 2.875rem;
