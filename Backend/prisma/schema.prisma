@@ -26,6 +26,11 @@ enum StatusFila {
   EXPIRADO
 }
 
+enum TipoNotificacao {
+  HORARIO_LIBERADO
+  PRIORIDADE_EXPIRADA
+}
+
 model Usuario {
   id               String   @id @default(uuid())
   nome             String
@@ -45,7 +50,9 @@ model Usuario {
   agendamentosComoCliente Agendamento[]  @relation("AgendamentosCliente")
   favoritos               Favorito[]
   avaliacoes              Avaliacao[]
-  filaDeEspera            FilaDeEspera[]
+  filaDeEspera            FilaDeEspera[]  @relation("FilaCliente")
+  notificacoes            Notificacao[]
+  filaComoBarbeiro        FilaDeEspera[]  @relation("FilaBarbeiro")
 
   @@map("usuarios")
 }
@@ -57,6 +64,7 @@ model Servico {
   duracaoMin   Int
   preco        Decimal       @db.Decimal(10, 2)
   agendamentos Agendamento[]
+  filaDeEspera FilaDeEspera[]
 
   @@map("servicos")
 }
@@ -110,15 +118,22 @@ model Agendamento {
 }
 
 model FilaDeEspera {
-  id           String     @id @default(uuid())
-  clienteId    String
-  barbeiroId   String
-  dataDesejada DateTime   @db.Date
-  status       StatusFila @default(AGUARDANDO)
-  criadoEm     DateTime   @default(now())
+  id         String     @id @default(uuid())
+  clienteId  String
+  barbeiroId String
+  servicoId  String
+  horaInicio DateTime
+  horaFim    DateTime
+  status     StatusFila @default(AGUARDANDO)
+  expiraEm   DateTime? 
+  criadoEm   DateTime   @default(now())
 
-  cliente Usuario @relation(fields: [clienteId], references: [id])
+  cliente      Usuario       @relation("FilaCliente", fields: [clienteId], references: [id])
+  barbeiro     Usuario       @relation("FilaBarbeiro", fields: [barbeiroId], references: [id])
+  servico      Servico       @relation(fields: [servicoId], references: [id])
+  notificacoes Notificacao[]
 
+  @@index([barbeiroId, horaInicio, status])
   @@map("fila_de_espera")
 }
 
@@ -143,4 +158,20 @@ model Favorito {
 
   @@id([clienteId, barbeiroId])
   @@map("favoritos")
+}
+
+model Notificacao {
+  id             String          @id @default(uuid())
+  usuarioId      String
+  tipo           TipoNotificacao
+  mensagem       String
+  lida           Boolean         @default(false)
+  filaDeEsperaId String?
+  criadoEm       DateTime        @default(now())
+
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  filaDeEspera FilaDeEspera? @relation(fields: [filaDeEsperaId], references: [id])
+
+  @@index([usuarioId, lida])
+  @@map("notificacoes")
 }

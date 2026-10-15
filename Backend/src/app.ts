@@ -6,6 +6,8 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 import { barbeirosRoutes } from "./modules/barbeiros/barbeiros.routes.js";
 import { disponibilidadesRoutes } from "./modules/disponibilidades/disponibilidades.routes.js";
 import { especialidadesRoutes } from "./modules/especialidades/especialidades.routes.js";
+import { filaDeEsperaRoutes } from "./modules/filaDeEspera/filaDeEspera.routes.js";
+import { notificacoesRoutes } from "./modules/notificacoes/notificacoes.routes.js";
 import { servicosRoutes } from "./modules/servicos/servicos.routes.js";
 
 export const app = express();
@@ -21,6 +23,8 @@ app.use("/especialidades", especialidadesRoutes);
 app.use("/barbeiros", barbeirosRoutes);
 app.use("/disponibilidades", disponibilidadesRoutes);
 app.use("/agendamentos", agendamentosRoutes);
+app.use("/fila-de-espera", filaDeEsperaRoutes);
+app.use("/notificacoes", notificacoesRoutes);
 
 // o error handler tem que ser o ÚLTIMO middleware registrado
 app.use(errorHandler);

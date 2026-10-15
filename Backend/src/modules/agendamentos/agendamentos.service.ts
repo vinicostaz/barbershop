@@ -1,15 +1,15 @@
 import type { AuthPayload } from "../../middlewares/authMiddleware.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { db } from "../../prisma/client.js";
-import { disponibilidadesRepository } from "../disponibilidades/disponibilidades.repository.js";
+import { filaDeEsperaRepository } from "../filaDeEspera/filaDeEspera.repository.js";
+import { filaDeEsperaService } from "../filaDeEspera/filaDeEspera.service.js";
 import { servicosRepository } from "../servicos/servicos.repository.js";
-import { agendamentosRepository } from "./agendamentos.repository.js";
 import {
-  adicionarMinutos,
-  combinarDataHora,
-  diaDaSemana,
-  formatarHora,
-} from "./agendamentos.utils.js";
+  calcularHorario,
+  traduzirErroDeConflito,
+  validarDisponibilidade,
+} from "./agendamentos.horario.js";
+import { agendamentosRepository } from "./agendamentos.repository.js";
 
 interface CriarAgendamentoInput {
   barbeiroId: string;
@@ -23,42 +23,21 @@ interface ReagendarInput {
   horaInicio: string;
 }
 
-const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-// Valida o horário pedido (formato, disponibilidade do barbeiro e conflito).
+// Valida o horário pedido (formato, disponibilidade, conflito e reserva da fila de espera).
 // Compartilhada entre criar e reagendar.
 async function prepararHorario(params: {
   barbeiroId: string;
+  clienteId: string; // quem está agendando (a prioridade da fila é dele?)
   duracaoMin: number;
   data: string;
   horaInicio: string;
   ignorarAgendamentoId?: string;
 }) {
-  if (!DATA_REGEX.test(params.data ?? "")) {
-    throw new AppError("data deve estar no formato AAAA-MM-DD.");
-  }
-  if (!HORA_REGEX.test(params.horaInicio ?? "")) {
-    throw new AppError("horaInicio deve estar no formato HH:mm.");
-  }
+  const { horaInicio, horaFim } = calcularHorario(params.data, params.horaInicio, params.duracaoMin);
 
-  const horaInicio = combinarDataHora(params.data, params.horaInicio);
-  const horaFim = adicionarMinutos(horaInicio, params.duracaoMin);
+  await validarDisponibilidade(params.barbeiroId, horaInicio, horaFim);
 
-  // 1) o horário pedido precisa caber dentro de algum bloco de disponibilidade do barbeiro
-  const disponibilidades = await disponibilidadesRepository.findByBarbeiro(params.barbeiroId);
-  const diaSemana = diaDaSemana(params.data);
-  const cabeNaDisponibilidade = disponibilidades.some(
-    (d) =>
-      d.diaSemana === diaSemana &&
-      formatarHora(horaInicio) >= d.horaInicio &&
-      formatarHora(horaFim) <= d.horaFim
-  );
-  if (!cabeNaDisponibilidade) {
-    throw new AppError("O horário escolhido está fora da disponibilidade do barbeiro.", 400);
-  }
-
-  // 2) checagem "otimista" de conflito (rápida, evita ir ao banco tentar e falhar)
+  // checagem "otimista" de conflito (rápida, evita ir ao banco tentar e falhar)
   const conflito = await agendamentosRepository.findConflitante(
     params.barbeiroId,
     horaInicio,
@@ -72,20 +51,31 @@ async function prepararHorario(params: {
     );
   }
 
-  return { horaInicio, horaFim };
-}
-
-// 3) checagem "definitiva": se duas requisições passarem pela checagem otimista ao mesmo
-// tempo, quem barra é a exclusion constraint do Postgres. Aqui só traduzimos o erro.
-function traduzirErroDeConflito(err: unknown): never {
-  const mensagem = err instanceof Error ? err.message : String(err);
-  if (mensagem.includes("sem_conflito_horario")) {
+  // horário liberado por cancelamento fica reservado, por um tempo, ao cliente da fila
+  const reservado = await filaDeEsperaRepository.findPrioridadeAtiva(
+    params.barbeiroId,
+    horaInicio,
+    horaFim,
+    params.clienteId
+  );
+  if (reservado) {
     throw new AppError(
-      "Esse horário acabou de ser preenchido por outro cliente. Escolha outro horário.",
+      "Esse horário está reservado temporariamente para um cliente da fila de espera. Tente novamente em alguns minutos.",
       409
     );
   }
-  throw err;
+
+  return { horaInicio, horaFim };
+}
+
+// Um horário foi liberado (cancelamento ou reagendamento): avisa o próximo da fila.
+// Falha aqui NÃO pode desfazer o cancelamento, então só registramos o erro.
+async function liberarHorario(barbeiroId: string, horaInicio: Date, horaFim: Date) {
+  try {
+    await filaDeEsperaService.notificarProximo(barbeiroId, horaInicio, horaFim);
+  } catch (err) {
+    console.error("Falha ao processar a fila de espera:", err);
+  }
 }
 
 export const agendamentosService = {
@@ -109,23 +99,22 @@ export const agendamentosService = {
 
     const { horaInicio, horaFim } = await prepararHorario({
       barbeiroId: input.barbeiroId,
+      clienteId: usuarioLogado.sub,
       duracaoMin: servico.duracaoMin,
       data: input.data,
       horaInicio: input.horaInicio,
     });
 
-    try {
-      return await agendamentosRepository.create({
+    return agendamentosRepository
+      .create({
         clienteId: usuarioLogado.sub,
         barbeiroId: input.barbeiroId,
         servicoId: input.servicoId,
         data: horaInicio,
         horaInicio,
         horaFim,
-      });
-    } catch (err) {
-      traduzirErroDeConflito(err);
-    }
+      })
+      .catch((err: unknown) => traduzirErroDeConflito(err));
   },
 
   // UC08 - Reagendar atendimento (mesmo barbeiro e serviço, novo dia/horário)
@@ -147,27 +136,27 @@ export const agendamentosService = {
 
     const { horaInicio, horaFim } = await prepararHorario({
       barbeiroId: agendamento.barbeiroId,
+      clienteId: agendamento.clienteId,
       duracaoMin: agendamento.servico.duracaoMin,
       data: input.data,
       horaInicio: input.horaInicio,
       ignorarAgendamentoId: id, // não conflitar com o próprio agendamento
     });
 
-    try {
-      const novo = await agendamentosRepository.reagendar(id, {
+    const novo = await agendamentosRepository
+      .reagendar(id, {
         clienteId: agendamento.clienteId,
         barbeiroId: agendamento.barbeiroId,
         servicoId: agendamento.servicoId,
         data: horaInicio,
         horaInicio,
         horaFim,
-      });
-      // TODO (Fila de espera): o horário antigo acabou de ser liberado,
-      // é aqui que vamos avisar o primeiro cliente da fila daquele horário.
-      return novo;
-    } catch (err) {
-      traduzirErroDeConflito(err);
-    }
+      })
+      .catch((err: unknown) => traduzirErroDeConflito(err));
+
+    // o horário antigo ficou livre: avisa o próximo da fila
+    await liberarHorario(agendamento.barbeiroId, agendamento.horaInicio, agendamento.horaFim);
+    return novo;
   },
 
   // UC07 - Cancelar agendamento
@@ -189,8 +178,9 @@ export const agendamentosService = {
     }
 
     const cancelado = await agendamentosRepository.updateStatus(id, "CANCELADO");
-    // TODO (Fila de espera): idem ao reagendar, o horário liberado aqui
-    // dispara a notificação para o próximo da fila.
+
+    // o horário ficou livre: avisa o próximo da fila
+    await liberarHorario(agendamento.barbeiroId, agendamento.horaInicio, agendamento.horaFim);
     return cancelado;
   },
 
