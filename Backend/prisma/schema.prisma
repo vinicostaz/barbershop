@@ -53,6 +53,7 @@ model Usuario {
   filaDeEspera            FilaDeEspera[]  @relation("FilaCliente")
   notificacoes            Notificacao[]
   filaComoBarbeiro        FilaDeEspera[]  @relation("FilaBarbeiro")
+  bloqueios               BloqueioPeriodo[]
 
   @@map("usuarios")
 }
@@ -174,4 +175,18 @@ model Notificacao {
 
   @@index([usuarioId, lida])
   @@map("notificacoes")
+}
+
+model BloqueioPeriodo {
+  id         String   @id @default(uuid())
+  barbeiroId String
+  inicio     DateTime // início do período bloqueado
+  fim        DateTime // fim do período (exclusivo)
+  motivo     String?
+  criadoEm   DateTime @default(now())
+
+  barbeiro Usuario @relation(fields: [barbeiroId], references: [id])
+
+  @@index([barbeiroId, inicio])
+  @@map("bloqueios_periodo")
 }

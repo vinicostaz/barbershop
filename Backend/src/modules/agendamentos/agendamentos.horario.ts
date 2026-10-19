@@ -1,4 +1,5 @@
 import { AppError } from "../../middlewares/errorHandler.js";
+import { bloqueiosRepository } from "../bloqueios/bloqueios.repository.js";
 import { disponibilidadesRepository } from "../disponibilidades/disponibilidades.repository.js";
 import { adicionarMinutos, combinarDataHora, formatarHora } from "./agendamentos.utils.js";
 
@@ -20,7 +21,8 @@ export function calcularHorario(data: string, hora: string, duracaoMin: number) 
   return { horaInicio, horaFim };
 }
 
-// O intervalo precisa caber dentro de algum bloco de disponibilidade do barbeiro.
+// O intervalo precisa caber dentro de algum bloco de disponibilidade do barbeiro
+// e não pode cair em um período que ele bloqueou (folga, férias etc.).
 export async function validarDisponibilidade(barbeiroId: string, horaInicio: Date, horaFim: Date) {
   const disponibilidades = await disponibilidadesRepository.findByBarbeiro(barbeiroId);
   const diaSemana = horaInicio.getUTCDay(); // 0 = domingo ... 6 = sábado
@@ -32,6 +34,11 @@ export async function validarDisponibilidade(barbeiroId: string, horaInicio: Dat
   );
   if (!cabe) {
     throw new AppError("O horário escolhido está fora da disponibilidade do barbeiro.", 400);
+  }
+
+  const bloqueio = await bloqueiosRepository.findSobreposto(barbeiroId, horaInicio, horaFim);
+  if (bloqueio) {
+    throw new AppError("O barbeiro não atende neste período (agenda bloqueada).", 400);
   }
 }
 
