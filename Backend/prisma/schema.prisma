@@ -39,6 +39,7 @@ model Usuario {
   telefone         String?
   role             Role
   pontosFidelidade Int      @default(0)
+  ativo            Boolean  @default(true)
   criadoEm         DateTime @default(now())
 
   // preenchido apenas quando role = BARBEIRO

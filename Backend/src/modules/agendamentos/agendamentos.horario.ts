@@ -1,6 +1,7 @@
 import { AppError } from "../../middlewares/errorHandler.js";
 import { bloqueiosRepository } from "../bloqueios/bloqueios.repository.js";
 import { disponibilidadesRepository } from "../disponibilidades/disponibilidades.repository.js";
+import { agoraComoHoraDeParede } from "./agendamentos.tempo.js";
 import { adicionarMinutos, combinarDataHora, formatarHora } from "./agendamentos.utils.js";
 
 // Funções de horário compartilhadas entre Agendamento e Fila de Espera.
@@ -8,7 +9,8 @@ import { adicionarMinutos, combinarDataHora, formatarHora } from "./agendamentos
 const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-// Valida o formato e calcula o intervalo [horaInicio, horaFim) do atendimento.
+// Valida o formato, recusa horários que já passaram e calcula o intervalo
+// [horaInicio, horaFim) do atendimento.
 export function calcularHorario(data: string, hora: string, duracaoMin: number) {
   if (!DATA_REGEX.test(data ?? "")) {
     throw new AppError("data deve estar no formato AAAA-MM-DD.");
@@ -17,6 +19,9 @@ export function calcularHorario(data: string, hora: string, duracaoMin: number) 
     throw new AppError("horaInicio deve estar no formato HH:mm.");
   }
   const horaInicio = combinarDataHora(data, hora);
+  if (horaInicio.getTime() < agoraComoHoraDeParede().getTime()) {
+    throw new AppError("Não é possível agendar em um horário que já passou.");
+  }
   const horaFim = adicionarMinutos(horaInicio, duracaoMin);
   return { horaInicio, horaFim };
 }

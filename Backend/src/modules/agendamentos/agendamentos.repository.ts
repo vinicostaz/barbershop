@@ -1,6 +1,11 @@
 import { db } from "../../prisma/client.js";
+import { usuarioSemSenha } from "../../prisma/usuarioSemSenha.js";
 
-const includeCompleto = { cliente: true, barbeiro: true, servico: true } as const;
+const includeCompleto = {
+  cliente: usuarioSemSenha,
+  barbeiro: usuarioSemSenha,
+  servico: true,
+} as const;
 
 export const agendamentosRepository = {
   // ignorarId: usado no reagendamento, pra o agendamento que está sendo movido
@@ -15,19 +20,6 @@ export const agendamentosRepository = {
         horaInicio: { lt: horaFim },
         horaFim: { gt: horaInicio },
       },
-    });
-  },
-
-  findConfirmadosNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
-    return db.agendamento.findMany({
-      where: {
-        barbeiroId,
-        status: "CONFIRMADO",
-        horaInicio: { lt: fim },
-        horaFim: { gt: inicio },
-      },
-      select: { horaInicio: true, horaFim: true },
-      orderBy: { horaInicio: "asc" },
     });
   },
 
@@ -69,7 +61,7 @@ export const agendamentosRepository = {
   findByCliente(clienteId: string) {
     return db.agendamento.findMany({
       where: { clienteId },
-      include: { barbeiro: true, servico: true },
+      include: { barbeiro: usuarioSemSenha, servico: true },
       orderBy: { horaInicio: "desc" },
     });
   },
@@ -77,7 +69,7 @@ export const agendamentosRepository = {
   findByBarbeiro(barbeiroId: string) {
     return db.agendamento.findMany({
       where: { barbeiroId },
-      include: { cliente: true, servico: true },
+      include: { cliente: usuarioSemSenha, servico: true },
       orderBy: { horaInicio: "asc" },
     });
   },

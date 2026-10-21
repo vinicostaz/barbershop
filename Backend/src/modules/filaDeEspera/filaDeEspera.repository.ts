@@ -1,6 +1,11 @@
 import { db } from "../../prisma/client.js";
+import { usuarioSemSenha } from "../../prisma/usuarioSemSenha.js";
 
-const includeCompleto = { cliente: true, barbeiro: true, servico: true } as const;
+const includeCompleto = {
+  cliente: usuarioSemSenha,
+  barbeiro: usuarioSemSenha,
+  servico: true,
+} as const;
 
 // duas faixas [A,B) e [C,D) se sobrepõem quando A < D e C < B
 function sobrepoe(horaInicio: Date, horaFim: Date) {
@@ -32,7 +37,7 @@ export const filaDeEsperaRepository = {
   findByCliente(clienteId: string) {
     return db.filaDeEspera.findMany({
       where: { clienteId },
-      include: { barbeiro: true, servico: true },
+      include: { barbeiro: usuarioSemSenha, servico: true },
       orderBy: { criadoEm: "desc" },
     });
   },
@@ -40,7 +45,7 @@ export const filaDeEsperaRepository = {
   findByBarbeiro(barbeiroId: string) {
     return db.filaDeEspera.findMany({
       where: { barbeiroId },
-      include: { cliente: true, servico: true },
+      include: { cliente: usuarioSemSenha, servico: true },
       orderBy: { criadoEm: "asc" },
     });
   },
@@ -83,7 +88,7 @@ export const filaDeEsperaRepository = {
   findAguardando(barbeiroId: string, horaInicio: Date, horaFim: Date) {
     return db.filaDeEspera.findMany({
       where: { barbeiroId, status: "AGUARDANDO", ...sobrepoe(horaInicio, horaFim) },
-      include: { barbeiro: true },
+      include: { barbeiro: usuarioSemSenha },
       orderBy: { criadoEm: "asc" },
     });
   },

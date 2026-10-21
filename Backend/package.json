@@ -10,7 +10,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "contract:emit": "prisma contract emit",
     "dev": "tsx watch src/server.ts",
-    "dev:local": "bash scripts/dev.local.sh"
+    "dev:local": "bash scripts/dev.local.sh",
+    "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
