@@ -35,6 +35,11 @@ export type CreateAppointmentInput = {
   servicoId: string
 }
 
+export type RescheduleAppointmentInput = {
+  data: string
+  horaInicio: string
+}
+
 function withAuthorization(token: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers)
   headers.set('Authorization', `Bearer ${token}`)
@@ -54,6 +59,13 @@ function normalizeAppointment(appointment: ApiAppointment): Appointment {
 }
 
 export const appointmentsService = {
+  async cancel(id: string, token: string) {
+    await apiRequest<unknown>(
+      `/agendamentos/${id}/cancelar`,
+      withAuthorization(token, { method: 'PATCH' }),
+    )
+  },
+
   async create(input: CreateAppointmentInput, token: string) {
     const appointment = await apiRequest<ApiAppointment>(
       '/agendamentos',
@@ -73,5 +85,21 @@ export const appointmentsService = {
     )
 
     return appointments.map(normalizeAppointment)
+  },
+
+  async reschedule(
+    id: string,
+    input: RescheduleAppointmentInput,
+    token: string,
+  ) {
+    const appointment = await apiRequest<ApiAppointment>(
+      `/agendamentos/${id}/reagendar`,
+      withAuthorization(token, {
+        body: JSON.stringify(input),
+        method: 'PATCH',
+      }),
+    )
+
+    return normalizeAppointment(appointment)
   },
 }

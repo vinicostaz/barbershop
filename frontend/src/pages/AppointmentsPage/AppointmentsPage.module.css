@@ -32,6 +32,83 @@
   line-height: 1.75;
 }
 
+.customerHeader {
+  padding-block: clamp(2rem, 4vw, 3.25rem);
+  background: var(--color-ivory-100);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.customerHeaderContent {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.customerIntroduction > span {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.customerIntroduction h1 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.customerIntroduction p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.customerViewTabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.customerViewTabs button {
+  min-height: 2.85rem;
+  padding: 0.7rem 1.15rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.customerViewTabs button:hover {
+  color: var(--color-text);
+}
+
+.customerViewTabs .activeViewTab {
+  color: var(--color-white);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.customerWorkspace {
+  scroll-margin-top: 5rem;
+}
+
 .booking {
   padding-block: clamp(3rem, 7vw, 6rem);
   background: var(--color-surface);
@@ -474,6 +551,11 @@
   .agendaGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .customerHeaderContent {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 40rem) {
@@ -484,6 +566,16 @@
 
   .hero h1 {
     font-size: clamp(2.65rem, 13vw, 4rem);
+  }
+
+  .customerViewTabs {
+    width: 100%;
+  }
+
+  .customerViewTabs button {
+    flex: 1;
+    padding-inline: var(--space-3);
+    white-space: normal;
   }
 
   .workflow,
