@@ -91,6 +91,9 @@ export const agendamentosService = {
     if (!barbeiro) {
       throw new AppError("Barbeiro não encontrado.", 404);
     }
+    if (!barbeiro.ativo) {
+      throw new AppError("Este barbeiro não está mais atendendo.", 400);
+    }
 
     const servico = await servicosRepository.findById(input.servicoId);
     if (!servico) {

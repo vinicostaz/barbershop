@@ -7,6 +7,7 @@ import {
   validarDisponibilidade,
 } from "../agendamentos/agendamentos.horario.js";
 import { agendamentosRepository } from "../agendamentos/agendamentos.repository.js";
+import { agoraComoHoraDeParede } from "../agendamentos/agendamentos.tempo.js";
 import { formatarHora } from "../agendamentos/agendamentos.utils.js";
 import { servicosRepository } from "../servicos/servicos.repository.js";
 import { filaDeEsperaRepository } from "./filaDeEspera.repository.js";
@@ -39,6 +40,9 @@ export const filaDeEsperaService = {
     });
     if (!barbeiro) {
       throw new AppError("Barbeiro não encontrado.", 404);
+    }
+    if (!barbeiro.ativo) {
+      throw new AppError("Este barbeiro não está mais atendendo.", 400);
     }
 
     const servico = await servicosRepository.findById(input.servicoId);
@@ -111,6 +115,12 @@ export const filaDeEsperaService = {
       throw new AppError("O prazo para confirmar este horário expirou.", 410);
     }
 
+    // o horário pode ter passado enquanto o cliente decidia
+    if (entrada.horaInicio.getTime() < agoraComoHoraDeParede().getTime()) {
+      await filaDeEsperaRepository.marcarExpirado(entrada.id, entrada.clienteId);
+      throw new AppError("Esse horário já passou.", 410);
+    }
+
     await validarDisponibilidade(entrada.barbeiroId, entrada.horaInicio, entrada.horaFim);
 
     const conflito = await agendamentosRepository.findConflitante(
@@ -165,7 +175,9 @@ export const filaDeEsperaService = {
 
     // 3) primeiro da fila cujo horário desejado está realmente livre
     const candidatos = await filaDeEsperaRepository.findAguardando(barbeiroId, horaInicio, horaFim);
+    const agora = agoraComoHoraDeParede();
     for (const candidato of candidatos) {
+      if (candidato.horaInicio.getTime() < agora.getTime()) continue; // horário que já passou
       const conflito = await agendamentosRepository.findConflitante(
         barbeiroId,
         candidato.horaInicio,

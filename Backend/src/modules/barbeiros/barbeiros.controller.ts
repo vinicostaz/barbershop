@@ -7,6 +7,12 @@ export const barbeirosController = {
     return res.json(barbeiros);
   },
 
+  // admin: inclui os desativados
+  async listarTodos(_req: Request, res: Response) {
+    const barbeiros = await barbeirosService.listar(true);
+    return res.json(barbeiros);
+  },
+
   async buscarPorId(req: Request, res: Response) {
     const barbeiro = await barbeirosService.buscarPorId(req.params.id);
     return res.json(barbeiro);
@@ -19,7 +25,8 @@ export const barbeirosController = {
   },
 
   async atualizar(req: Request, res: Response) {
-    const barbeiro = await barbeirosService.atualizar(req.params.id, req.body);
+    const { nome, telefone } = req.body;
+    const barbeiro = await barbeirosService.atualizar(req.params.id, { nome, telefone });
     return res.json(barbeiro);
   },
 
@@ -28,6 +35,11 @@ export const barbeirosController = {
       req.params.id,
       req.body.especialidadeIds
     );
+    return res.json(barbeiro);
+  },
+
+  async alterarAtivo(req: Request, res: Response) {
+    const barbeiro = await barbeirosService.alterarAtivo(req.params.id, req.body.ativo);
     return res.json(barbeiro);
   },
 };
