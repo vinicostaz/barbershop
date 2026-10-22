@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
@@ -22,7 +23,9 @@ const administrativeModules = [
   {
     description: 'Consulta dos horários e acompanhamento dos atendimentos.',
     number: '04',
+    status: 'Disponível',
     title: 'Agendamentos',
+    to: '/profissional',
   },
 ]
 
@@ -58,16 +61,27 @@ export function AdminPage() {
         </div>
 
         <div className={styles.moduleGrid}>
-          {administrativeModules.map(({ description, number, title }) => (
-            <article className={styles.moduleCard} key={title}>
-              <span className={styles.moduleNumber} aria-hidden="true">
-                {number}
-              </span>
-              <span className={styles.moduleStatus}>Próxima etapa</span>
-              <h3>{title}</h3>
-              <p>{description}</p>
-            </article>
-          ))}
+          {administrativeModules.map(
+            ({ description, number, status = 'Próxima etapa', title, to }) => (
+              <article className={styles.moduleCard} key={title}>
+                <span className={styles.moduleNumber} aria-hidden="true">
+                  {number}
+                </span>
+                <span
+                  className={`${styles.moduleStatus} ${to ? styles.availableStatus : ''}`}
+                >
+                  {status}
+                </span>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                {to && (
+                  <Link className={styles.moduleAction} to={to}>
+                    Abrir agenda <span aria-hidden="true">→</span>
+                  </Link>
+                )}
+              </article>
+            ),
+          )}
         </div>
       </Container>
     </section>
