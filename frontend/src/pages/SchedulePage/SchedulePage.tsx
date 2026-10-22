@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -139,6 +140,7 @@ function ScheduleCard({
 }
 
 export function SchedulePage() {
+  const location = useLocation()
   const { session } = useAuth()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('month')
@@ -273,6 +275,12 @@ export function SchedulePage() {
   return (
     <section className={styles.page} aria-labelledby="schedule-title">
       <Container>
+        {isAdministrator && location.state?.fromAdmin === true && (
+          <Link className={styles.backToAdmin} to="/admin">
+            <span aria-hidden="true">←</span> Voltar para administração
+          </Link>
+        )}
+
         <header className={styles.hero}>
           <div>
             <Badge tone="brown">
