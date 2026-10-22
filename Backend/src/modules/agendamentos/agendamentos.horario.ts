@@ -47,11 +47,35 @@ export async function validarDisponibilidade(barbeiroId: string, horaInicio: Dat
   }
 }
 
+// O Prisma embrulha o erro do Postgres de jeitos diferentes conforme o driver e a versão:
+// às vezes o nome da constraint vem na mensagem, às vezes só o código 23P01, às vezes
+// dentro de `meta` ou `cause`. Por isso olhamos todos esses lugares, em vez de depender de
+// um único texto.
+export function ehConflitoDeHorario(err: unknown): boolean {
+  const e = err as { message?: unknown; code?: unknown; meta?: unknown; cause?: unknown } | null;
+  const causa = e?.cause as
+    | { message?: unknown; originalCode?: unknown; originalMessage?: unknown }
+    | undefined;
+
+  const partes = [
+    String(e?.message ?? ""),
+    String(e?.code ?? ""),
+    String(causa?.message ?? ""),
+    String(causa?.originalCode ?? ""),
+    String(causa?.originalMessage ?? ""),
+  ];
+  try {
+    partes.push(JSON.stringify(e?.meta ?? {}, (_k, v) => (typeof v === "bigint" ? String(v) : v)));
+  } catch {
+    // meta com referência circular: ignora, os outros campos já cobrem
+  }
+  return /sem_conflito_horario|23P01|exclusion/i.test(partes.join(" | "));
+}
+
 // Checagem "definitiva" de conflito: se duas requisições passarem pela checagem otimista
 // ao mesmo tempo, quem barra é a exclusion constraint do Postgres. Aqui só traduzimos o erro.
 export function traduzirErroDeConflito(err: unknown): never {
-  const mensagem = err instanceof Error ? err.message : String(err);
-  if (mensagem.includes("sem_conflito_horario")) {
+  if (ehConflitoDeHorario(err)) {
     throw new AppError(
       "Esse horário acabou de ser preenchido por outro cliente. Escolha outro horário.",
       409

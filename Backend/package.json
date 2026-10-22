@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate deploy",
     "dev": "npm run prisma:generate && npm run prisma:migrate && tsx watch src/server.ts",
     "dev:local": "bash scripts/dev.local.sh",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "test:concorrencia": "tsx src/scripts/teste-concorrencia.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
