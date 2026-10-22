@@ -1,5 +1,9 @@
+import { useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { ProfessionalsManager } from '../../components/admin/ProfessionalsManager'
+import { ServicesManager } from '../../components/admin/ServicesManager'
+import { SpecialtiesManager } from '../../components/admin/SpecialtiesManager'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
 import styles from './AdminPage.module.css'
@@ -8,16 +12,19 @@ const administrativeModules = [
   {
     description: 'Cadastro, edição, preços, duração e disponibilidade no catálogo.',
     number: '01',
+    section: 'services',
     title: 'Serviços',
   },
   {
     description: 'Cadastro de profissionais e organização dos dados da equipe.',
     number: '02',
+    section: 'professionals',
     title: 'Profissionais',
   },
   {
     description: 'Organização das especialidades oferecidas pelos profissionais.',
     number: '03',
+    section: 'specialties',
     title: 'Especialidades',
   },
   {
@@ -29,8 +36,25 @@ const administrativeModules = [
   },
 ]
 
+type ManagementSection = 'professionals' | 'services' | 'specialties'
+
 export function AdminPage() {
   const { session } = useAuth()
+  const [activeSection, setActiveSection] = useState<ManagementSection>('services')
+
+  function selectSection(section: ManagementSection) {
+    setActiveSection(section)
+  }
+
+  function handleModuleKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+    section: ManagementSection,
+  ) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectSection(section)
+    }
+  }
 
   return (
     <section className={styles.page} aria-labelledby="titulo-administrativo">
@@ -54,35 +78,76 @@ export function AdminPage() {
 
         <div className={styles.sectionHeading}>
           <div>
-            <span>Estrutura inicial</span>
+            <span>Gestão da operação</span>
             <h2>Módulos administrativos</h2>
           </div>
-          <p>As funções de gerenciamento serão integradas nas próximas tarefas.</p>
+          <p>Selecione uma área para consultar e atualizar os dados da barbearia.</p>
         </div>
 
         <div className={styles.moduleGrid}>
           {administrativeModules.map(
-            ({ description, number, status = 'Próxima etapa', title, to }) => (
-              <article className={styles.moduleCard} key={title}>
-                <span className={styles.moduleNumber} aria-hidden="true">
-                  {number}
-                </span>
-                <span
-                  className={`${styles.moduleStatus} ${to ? styles.availableStatus : ''}`}
-                >
-                  {status}
-                </span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-                {to && (
-                  <Link className={styles.moduleAction} to={to}>
-                    Abrir agenda <span aria-hidden="true">→</span>
+            ({ description, number, section, status = 'Gerenciar', title, to }) => {
+              const content = (
+                <>
+                  <span className={styles.moduleNumber} aria-hidden="true">
+                    {number}
+                  </span>
+                  <span
+                    className={`${styles.moduleStatus} ${to || section ? styles.availableStatus : ''}`}
+                  >
+                    {status}
+                  </span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                  <span className={styles.moduleAction}>
+                    {to ? 'Abrir agenda' : 'Abrir módulo'}{' '}
+                    <span aria-hidden="true">→</span>
+                  </span>
+                </>
+              )
+
+              if (to) {
+                return (
+                  <Link
+                    className={styles.moduleCard}
+                    key={title}
+                    state={{ fromAdmin: true }}
+                    to={to}
+                  >
+                    {content}
                   </Link>
-                )}
-              </article>
-            ),
+                )
+              }
+
+              return (
+                <article
+                  className={`${styles.moduleCard} ${section === activeSection ? styles.activeModule : ''}`}
+                  key={title}
+                  onClick={() => selectSection(section as ManagementSection)}
+                  onKeyDown={(event) =>
+                    handleModuleKeyDown(event, section as ManagementSection)
+                  }
+                  role="button"
+                  tabIndex={0}
+                >
+                  {content}
+                </article>
+              )
+            },
           )}
         </div>
+
+        {session && (
+          <section className={styles.management} id="admin-management">
+            {activeSection === 'services' && <ServicesManager token={session.token} />}
+            {activeSection === 'professionals' && (
+              <ProfessionalsManager token={session.token} />
+            )}
+            {activeSection === 'specialties' && (
+              <SpecialtiesManager token={session.token} />
+            )}
+          </section>
+        )}
       </Container>
     </section>
   )

@@ -126,6 +126,26 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.moduleCard:hover,
+.activeModule {
+  border-color: var(--color-blue-300);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.activeModule {
+  background: color-mix(in srgb, var(--color-blue-300) 8%, white);
 }
 
 .moduleNumber {
@@ -173,6 +193,11 @@
 
 .moduleAction:hover {
   color: var(--color-primary-hover);
+}
+
+.management {
+  margin-top: var(--space-12);
+  scroll-margin-top: 6.5rem;
 }
 
 @media (max-width: 64rem) {

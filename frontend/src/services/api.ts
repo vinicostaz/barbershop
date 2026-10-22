@@ -31,7 +31,11 @@ export async function apiRequest<T>(
 
   try {
     response = await fetch(`${API_URL}${path}`, { ...options, headers })
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error
+    }
+
     throw new ApiError(
       'Não foi possível conectar ao servidor. Tente novamente em instantes.',
       0,
