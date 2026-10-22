@@ -4,13 +4,13 @@ import { ProfileRoute } from './auth/ProfileRoute'
 import styles from './App.module.css'
 import { Footer } from './components/layout/Footer/Footer'
 import { Header } from './components/layout/Header/Header'
-import { RoutePage } from './components/layout/RoutePage/RoutePage'
 import { AdminPage } from './pages/AdminPage/AdminPage'
 import { AppointmentsPage } from './pages/AppointmentsPage/AppointmentsPage'
 import { AuthPage } from './pages/AuthPage/AuthPage'
 import { HomePage } from './pages/HomePage/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage'
 import { ProfessionalsPage } from './pages/ProfessionalsPage/ProfessionalsPage'
+import { SchedulePage } from './pages/SchedulePage/SchedulePage'
 import { ServicesPage } from './pages/ServicesPage/ServicesPage'
 
 const pageTitles: Record<string, string> = {
@@ -54,7 +54,7 @@ function App() {
             path="/agendamentos"
             element={
               <ProfileRoute
-                allowedRoles={['CLIENTE', 'BARBEIRO', 'ADMINISTRADOR']}
+                allowedRoles={['CLIENTE']}
               >
                 <AppointmentsPage />
               </ProfileRoute>
@@ -72,11 +72,7 @@ function App() {
             path="/profissional"
             element={
               <ProfileRoute allowedRoles={['BARBEIRO', 'ADMINISTRADOR']}>
-                <RoutePage
-                  description="Consulte sua rotina profissional e acompanhe os atendimentos vinculados ao seu perfil."
-                  eyebrow="Área profissional"
-                  title="Sua agenda de trabalho organizada."
-                />
+                <SchedulePage />
               </ProfileRoute>
             }
           />

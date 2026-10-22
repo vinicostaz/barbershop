@@ -26,16 +26,14 @@ const profileItems: Record<UserRole, NavigationItem[]> = {
     { label: 'Início', to: '/' },
     { label: 'Serviços', to: '/servicos' },
     { label: 'Profissionais', to: '/profissionais' },
-    { label: 'Agendamentos', to: '/agendamentos' },
-    { label: 'Área profissional', to: '/profissional' },
+    { label: 'Agenda', to: '/profissional' },
     { label: 'Administração', to: '/admin', variant: 'highlight' },
   ],
   BARBEIRO: [
     { label: 'Início', to: '/' },
     { label: 'Serviços', to: '/servicos' },
     { label: 'Profissionais', to: '/profissionais' },
-    { label: 'Agendamentos', to: '/agendamentos' },
-    { label: 'Minha área', to: '/profissional', variant: 'highlight' },
+    { label: 'Minha agenda', to: '/profissional', variant: 'highlight' },
   ],
   CLIENTE: publicItems,
 }
