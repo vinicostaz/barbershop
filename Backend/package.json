@@ -9,7 +9,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "contract:emit": "prisma contract emit",
-    "dev": "tsx watch src/server.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "dev": "npm run prisma:generate && npm run prisma:migrate && tsx watch src/server.ts",
     "dev:local": "bash scripts/dev.local.sh",
     "seed": "tsx src/scripts/seed.ts"
   },

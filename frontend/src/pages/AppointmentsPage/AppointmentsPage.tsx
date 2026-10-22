@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { AppointmentOption } from '../../components/appointments/AppointmentOption/AppointmentOption'
+import { CustomerAppointments } from '../../components/appointments/CustomerAppointments/CustomerAppointments'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
 import { Container } from '../../components/ui/Container/Container'
@@ -18,6 +19,8 @@ import {
 import styles from './AppointmentsPage.module.css'
 
 const steps = ['Serviço', 'Profissional', 'Data', 'Horário', 'Revisão']
+
+type CustomerPageView = 'appointments' | 'booking'
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
@@ -152,7 +155,13 @@ function AppointmentsAgenda({ token }: { token: string }) {
   )
 }
 
-function CustomerBooking({ token }: { token: string }) {
+function CustomerBooking({
+  onAppointmentCreated,
+  token,
+}: {
+  onAppointmentCreated: (appointmentId: string) => void
+  token: string
+}) {
   const [searchParams] = useSearchParams()
   const [services, setServices] = useState<Service[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
@@ -346,7 +355,7 @@ function CustomerBooking({ token }: { token: string }) {
     setSubmitError('')
 
     try {
-      await appointmentsService.create(
+      const appointment = await appointmentsService.create(
         {
           barbeiroId: selectedProfessional.id,
           data: selectedDate.id,
@@ -356,6 +365,7 @@ function CustomerBooking({ token }: { token: string }) {
         token,
       )
       setConfirmed(true)
+      onAppointmentCreated(appointment.id)
     } catch (requestError) {
       setSubmitError(
         requestError instanceof Error
@@ -414,7 +424,11 @@ function CustomerBooking({ token }: { token: string }) {
   }
 
   return (
-    <section className={styles.booking} aria-label="Fluxo de agendamento">
+    <section
+      className={styles.booking}
+      id="novo-agendamento"
+      aria-label="Fluxo de agendamento"
+    >
       <Container className={styles.bookingLayout}>
         <div className={styles.workflow}>
           {!confirmed ? (
@@ -659,34 +673,173 @@ function CustomerBooking({ token }: { token: string }) {
 
 export function AppointmentsPage() {
   const { session } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isCustomer = session?.usuario.role === 'CLIENTE'
+  const hasBookingPreset =
+    searchParams.has('servico') || searchParams.has('profissional')
+  const [customerAppointmentsReloadKey, setCustomerAppointmentsReloadKey] =
+    useState(0)
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState('')
+  const [customerNotice, setCustomerNotice] = useState('')
+  const [customerView, setCustomerView] =
+    useState<CustomerPageView>('appointments')
+  const customerWorkspaceRef = useRef<HTMLDivElement>(null)
+  const initialCustomerViewResolvedRef = useRef(false)
+  const activeCustomerView = hasBookingPreset ? 'booking' : customerView
+
+  const handleScheduleStateResolved = useCallback(
+    (hasUpcomingAppointments: boolean) => {
+      if (initialCustomerViewResolvedRef.current) return
+
+      initialCustomerViewResolvedRef.current = true
+      setCustomerView(hasUpcomingAppointments ? 'appointments' : 'booking')
+    },
+    [],
+  )
+
+  function scrollToCustomerWorkspace() {
+    window.requestAnimationFrame(() => {
+      customerWorkspaceRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  function showCustomerView(view: CustomerPageView) {
+    initialCustomerViewResolvedRef.current = true
+
+    if (view === 'appointments' && hasBookingPreset) {
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.delete('servico')
+      nextSearchParams.delete('profissional')
+      setSearchParams(nextSearchParams, { replace: true })
+    }
+    if (view === 'booking') {
+      setCustomerNotice('')
+      setHighlightedAppointmentId('')
+    }
+    setCustomerView(view)
+    scrollToCustomerWorkspace()
+  }
+
+  function handleAppointmentCreated(appointmentId: string) {
+    initialCustomerViewResolvedRef.current = true
+
+    if (hasBookingPreset) {
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.delete('servico')
+      nextSearchParams.delete('profissional')
+      setSearchParams(nextSearchParams, { replace: true })
+    }
+    setCustomerAppointmentsReloadKey((key) => key + 1)
+    setHighlightedAppointmentId(appointmentId)
+    setCustomerNotice('Agendamento criado com sucesso.')
+    setCustomerView('appointments')
+    scrollToCustomerWorkspace()
+  }
 
   return (
     <>
-      <section className={styles.hero} aria-labelledby="titulo-agendamento">
-        <Container className={styles.heroContent}>
-          <div>
-            <Badge>Agendamentos</Badge>
-            <h1 id="titulo-agendamento">
-              {isCustomer
-                ? 'Reserve seu momento com tranquilidade.'
-                : 'Acompanhe os atendimentos em um só lugar.'}
-            </h1>
-          </div>
-          <p>
-            {isCustomer
-              ? 'Escolha o serviço, encontre seu profissional e organize o melhor horário em poucos passos.'
-              : 'Consulte os agendamentos vinculados ao seu nível de acesso.'}
-          </p>
-        </Container>
-      </section>
+      {isCustomer ? (
+        <>
+          <section
+            className={styles.customerHeader}
+            aria-labelledby="titulo-agendamento"
+          >
+            <Container className={styles.customerHeaderContent}>
+              <div className={styles.customerIntroduction}>
+                <span>Área do cliente</span>
+                <h1 id="titulo-agendamento">Agendamentos</h1>
+                <p>
+                  Consulte seus horários ou reserve um novo atendimento.
+                </p>
+              </div>
 
-      {session &&
-        (isCustomer ? (
-          <CustomerBooking token={session.token} />
-        ) : (
-          <AppointmentsAgenda token={session.token} />
-        ))}
+              <div
+                className={styles.customerViewTabs}
+                aria-label="Área de agendamentos"
+                role="tablist"
+              >
+                <button
+                  aria-controls="painel-agendamentos-cliente"
+                  aria-selected={activeCustomerView === 'appointments'}
+                  className={
+                    activeCustomerView === 'appointments'
+                      ? styles.activeViewTab
+                      : ''
+                  }
+                  id="aba-meus-agendamentos"
+                  onClick={() => showCustomerView('appointments')}
+                  role="tab"
+                  type="button"
+                >
+                  Meus agendamentos
+                </button>
+                <button
+                  aria-controls="painel-agendamentos-cliente"
+                  aria-selected={activeCustomerView === 'booking'}
+                  className={
+                    activeCustomerView === 'booking'
+                      ? styles.activeViewTab
+                      : ''
+                  }
+                  id="aba-novo-agendamento"
+                  onClick={() => showCustomerView('booking')}
+                  role="tab"
+                  type="button"
+                >
+                  Novo agendamento
+                </button>
+              </div>
+            </Container>
+          </section>
+
+          <div
+            aria-labelledby={
+              activeCustomerView === 'appointments'
+                ? 'aba-meus-agendamentos'
+                : 'aba-novo-agendamento'
+            }
+            className={styles.customerWorkspace}
+            id="painel-agendamentos-cliente"
+            ref={customerWorkspaceRef}
+            role="tabpanel"
+          >
+            {session && activeCustomerView === 'appointments' ? (
+              <CustomerAppointments
+                highlightedAppointmentId={highlightedAppointmentId}
+                notice={customerNotice}
+                onCreateAppointment={() => showCustomerView('booking')}
+                onScheduleStateResolved={handleScheduleStateResolved}
+                reloadKey={customerAppointmentsReloadKey}
+                token={session.token}
+              />
+            ) : session ? (
+              <CustomerBooking
+                onAppointmentCreated={handleAppointmentCreated}
+                token={session.token}
+              />
+            ) : null}
+          </div>
+        </>
+      ) : (
+        <>
+          <section className={styles.hero} aria-labelledby="titulo-agendamento">
+            <Container className={styles.heroContent}>
+              <div>
+                <Badge>Agendamentos</Badge>
+                <h1 id="titulo-agendamento">
+                  Acompanhe os atendimentos em um só lugar.
+                </h1>
+              </div>
+              <p>Consulte os agendamentos vinculados ao seu nível de acesso.</p>
+            </Container>
+          </section>
+
+          {session && <AppointmentsAgenda token={session.token} />}
+        </>
+      )}
     </>
   )
 }
