@@ -40,6 +40,7 @@ const statusLabels: Record<Appointment['status'], string> = {
   CANCELADO: 'Cancelado',
   CONCLUIDO: 'Concluído',
   CONFIRMADO: 'Confirmado',
+  REAGENDADO: 'Reagendado',
 }
 
 function startOfToday() {
@@ -237,6 +238,9 @@ export function SchedulePage() {
       confirmed: filteredAppointments.filter(
         (appointment) => appointment.status === 'CONFIRMADO',
       ).length,
+      rescheduled: filteredAppointments.filter(
+        (appointment) => appointment.status === 'REAGENDADO',
+      ).length,
     }),
     [filteredAppointments],
   )
@@ -383,6 +387,10 @@ export function SchedulePage() {
             <li>
               <strong>{statusSummary.canceled}</strong>
               Cancelados
+            </li>
+            <li>
+              <strong>{statusSummary.rescheduled}</strong>
+              Reagendados
             </li>
           </ul>
         </div>

@@ -1,11 +1,30 @@
 import { db } from "../../prisma/client.js";
-import { usuarioSemSenha } from "../../prisma/usuarioSemSenha.js";
+import { AppError } from "../../middlewares/errorHandler.js";
+import { usuarioResumo } from "../../prisma/usuarioSemSenha.js";
 
 const includeCompleto = {
-  cliente: usuarioSemSenha,
-  barbeiro: usuarioSemSenha,
+  cliente: usuarioResumo,
+  barbeiro: usuarioResumo,
   servico: true,
 } as const;
+
+const mensagemConflitoCliente =
+  "Você já possui outro agendamento que se sobrepõe a esse horário.";
+
+function conflitoDoCliente(
+  clienteId: string,
+  horaInicio: Date,
+  horaFim: Date,
+  ignorarId?: string
+) {
+  return {
+    clienteId,
+    status: "CONFIRMADO" as const,
+    ...(ignorarId ? { id: { not: ignorarId } } : {}),
+    horaInicio: { lt: horaFim },
+    horaFim: { gt: horaInicio },
+  };
+}
 
 export const agendamentosRepository = {
   // ignorarId: usado no reagendamento, pra o agendamento que está sendo movido
@@ -23,7 +42,18 @@ export const agendamentosRepository = {
     });
   },
 
-  create(data: {
+  findConflitanteCliente(
+    clienteId: string,
+    horaInicio: Date,
+    horaFim: Date,
+    ignorarId?: string
+  ) {
+    return db.agendamento.findFirst({
+      where: conflitoDoCliente(clienteId, horaInicio, horaFim, ignorarId),
+    });
+  },
+
+  async create(data: {
     clienteId: string;
     barbeiroId: string;
     servicoId: string;
@@ -31,7 +61,21 @@ export const agendamentosRepository = {
     horaInicio: Date;
     horaFim: Date;
   }) {
-    return db.agendamento.create({ data, include: includeCompleto });
+    return db.$transaction(async (tx) => {
+      // Serializa operações do mesmo cliente. Assim, duas requisições simultâneas
+      // para barbeiros diferentes não conseguem criar horários sobrepostos.
+      await tx.$queryRaw`
+        SELECT 1 AS locked
+        FROM pg_advisory_xact_lock(hashtext(${data.clienteId}))
+      `;
+      const conflito = await tx.agendamento.findFirst({
+        where: conflitoDoCliente(data.clienteId, data.horaInicio, data.horaFim),
+        select: { id: true },
+      });
+      if (conflito) throw new AppError(mensagemConflitoCliente, 409);
+
+      return tx.agendamento.create({ data, include: includeCompleto });
+    });
   },
 
   // Cancela o antigo e cria o novo na MESMA transação: se o novo falhar
@@ -49,7 +93,17 @@ export const agendamentosRepository = {
     }
   ) {
     return db.$transaction(async (tx) => {
-      await tx.agendamento.update({ where: { id }, data: { status: "CANCELADO" } });
+      await tx.$queryRaw`
+        SELECT 1 AS locked
+        FROM pg_advisory_xact_lock(hashtext(${novo.clienteId}))
+      `;
+      const conflito = await tx.agendamento.findFirst({
+        where: conflitoDoCliente(novo.clienteId, novo.horaInicio, novo.horaFim, id),
+        select: { id: true },
+      });
+      if (conflito) throw new AppError(mensagemConflitoCliente, 409);
+
+      await tx.agendamento.update({ where: { id }, data: { status: "REAGENDADO" } });
       return tx.agendamento.create({ data: novo, include: includeCompleto });
     });
   },
@@ -61,7 +115,7 @@ export const agendamentosRepository = {
   findByCliente(clienteId: string) {
     return db.agendamento.findMany({
       where: { clienteId },
-      include: { barbeiro: usuarioSemSenha, servico: true },
+      include: { barbeiro: usuarioResumo, servico: true },
       orderBy: { horaInicio: "desc" },
     });
   },
@@ -69,7 +123,7 @@ export const agendamentosRepository = {
   findByBarbeiro(barbeiroId: string) {
     return db.agendamento.findMany({
       where: { barbeiroId },
-      include: { cliente: usuarioSemSenha, servico: true },
+      include: { cliente: usuarioResumo, servico: true },
       orderBy: { horaInicio: "asc" },
     });
   },
@@ -81,7 +135,20 @@ export const agendamentosRepository = {
     });
   },
 
-  updateStatus(id: string, status: "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") {
+  findConfirmadosNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.agendamento.findMany({
+      where: {
+        barbeiroId,
+        status: "CONFIRMADO",
+        horaInicio: { lt: fim },
+        horaFim: { gt: inicio },
+      },
+      select: { horaInicio: true, horaFim: true },
+      orderBy: { horaInicio: "asc" },
+    });
+  },
+
+  updateStatus(id: string, status: "CONFIRMADO" | "CANCELADO" | "CONCLUIDO" | "REAGENDADO") {
     return db.agendamento.update({ where: { id }, data: { status } });
   },
 };

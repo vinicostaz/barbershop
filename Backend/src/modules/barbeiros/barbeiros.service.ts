@@ -2,12 +2,30 @@ import bcrypt from "bcryptjs";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { agoraComoHoraDeParede } from "../agendamentos/agendamentos.tempo.js";
 import { barbeirosRepository } from "./barbeiros.repository.js";
+import { normalizarEmail } from "../../utils/normalizacao.js";
 
 interface CriarBarbeiroInput {
   nome: string;
   email: string;
   senha: string;
   telefone?: string;
+  especialidadeIds?: unknown;
+}
+
+function validarEspecialidades(valor: unknown): string[] {
+  if (valor === undefined) return [];
+  if (!Array.isArray(valor) || valor.some((id) => typeof id !== "string" || !id)) {
+    throw new AppError("especialidadeIds deve ser um array de ids válidos.");
+  }
+  return [...new Set(valor)];
+}
+
+async function garantirEspecialidadesExistentes(ids: string[]) {
+  if (ids.length === 0) return;
+  const quantidade = await barbeirosRepository.contarEspecialidades(ids);
+  if (quantidade !== ids.length) {
+    throw new AppError("Uma ou mais especialidades não foram encontradas.", 404);
+  }
 }
 
 export const barbeirosService = {
@@ -35,23 +53,29 @@ export const barbeirosService = {
       throw new AppError("A senha deve ter pelo menos 6 caracteres.");
     }
 
-    const existente = await barbeirosRepository.findByEmail(input.email);
+    const email = normalizarEmail(input.email);
+    const existente = await barbeirosRepository.findByEmail(email);
     if (existente) {
       throw new AppError("Já existe um usuário cadastrado com este e-mail.", 409);
     }
 
+    const especialidadeIds = validarEspecialidades(input.especialidadeIds);
+    await garantirEspecialidadesExistentes(especialidadeIds);
     const senhaHash = await bcrypt.hash(input.senha, 10);
-    return barbeirosRepository.create({
-      nome: input.nome,
-      email: input.email,
+    return barbeirosRepository.createComEspecialidades({
+      nome: input.nome.trim(),
+      email,
       senhaHash,
-      telefone: input.telefone,
-    });
+      telefone: input.telefone?.trim() || undefined,
+    }, especialidadeIds);
   },
 
   // Só nome e telefone são editáveis aqui. Ignora qualquer outro campo do body
   // (role, email, senhaHash, ativo...), que não devem mudar por este endpoint.
-  async atualizar(id: string, data: { nome?: string; telefone?: string }) {
+  async atualizar(
+    id: string,
+    data: { nome?: string; telefone?: string; especialidadeIds?: unknown }
+  ) {
     await this.buscarPorId(id, true);
 
     const dados: { nome?: string; telefone?: string } = {};
@@ -64,15 +88,19 @@ export const barbeirosService = {
     if (data?.telefone !== undefined) {
       dados.telefone = data.telefone;
     }
-    return barbeirosRepository.update(id, dados);
+    const especialidadeIds =
+      data.especialidadeIds === undefined
+        ? undefined
+        : validarEspecialidades(data.especialidadeIds);
+    if (especialidadeIds) await garantirEspecialidadesExistentes(especialidadeIds);
+    return barbeirosRepository.updateComEspecialidades(id, dados, especialidadeIds);
   },
 
   async atualizarEspecialidades(id: string, especialidadeIds: string[]) {
     await this.buscarPorId(id, true);
-    if (!Array.isArray(especialidadeIds)) {
-      throw new AppError("especialidadeIds deve ser um array de ids.");
-    }
-    await barbeirosRepository.setEspecialidades(id, especialidadeIds);
+    const ids = validarEspecialidades(especialidadeIds);
+    await garantirEspecialidadesExistentes(ids);
+    await barbeirosRepository.setEspecialidades(id, ids);
     return this.buscarPorId(id, true);
   },
 

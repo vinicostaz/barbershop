@@ -86,13 +86,18 @@ async function main() {
   const barbeiro = await db.usuario.create({
     data: { nome: "Barbeiro Teste Concorrência", email: `conc-${RUN}-barbeiro@teste.local`, senhaHash: "x", role: "BARBEIRO" },
   });
+  const barbeiroAlternativo = await db.usuario.create({
+    data: { nome: "Segundo Barbeiro Teste", email: `conc-${RUN}-barbeiro-2@teste.local`, senhaHash: "x", role: "BARBEIRO" },
+  });
   const servico = await db.servico.create({
     data: { nome: `Teste Concorrência ${RUN}`, duracaoMin: 30, preco: 1 },
   });
   await db.disponibilidade.createMany({
-    data: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
-      barbeiroId: barbeiro.id, diaSemana, horaInicio: "00:00", horaFim: "23:59",
-    })),
+    data: [barbeiro.id, barbeiroAlternativo.id].flatMap((barbeiroId) =>
+      [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+        barbeiroId, diaSemana, horaInicio: "00:00", horaFim: "23:59",
+      }))
+    ),
   });
   const clientes: { id: string }[] = [];
   for (let i = 1; i <= N; i++) {
@@ -103,14 +108,235 @@ async function main() {
     );
   }
   const tokens = clientes.map((c) => jwt.sign({ sub: c.id, role: "CLIENTE" }, env.jwtSecret, { expiresIn: "10m" }));
+  const administrador = await db.usuario.create({
+    data: {
+      nome: "Administrador Teste Concorrência",
+      email: `conc-${RUN}-admin@teste.local`,
+      senhaHash: "x",
+      role: "ADMINISTRADOR",
+    },
+  });
+  const tokenAdministrador = jwt.sign(
+    { sub: administrador.id, role: "ADMINISTRADOR" },
+    env.jwtSecret,
+    { expiresIn: "10m" }
+  );
 
   const servidor = app.listen(0, "127.0.0.1");
   await new Promise<void>((r) => servidor.once("listening", () => r()));
   const base = `http://127.0.0.1:${(servidor.address() as AddressInfo).port}`;
-  const limparAgenda = () => db.agendamento.deleteMany({ where: { barbeiroId: barbeiro.id } });
+  const limparAgenda = () =>
+    db.agendamento.deleteMany({
+      where: { barbeiroId: { in: [barbeiro.id, barbeiroAlternativo.id] } },
+    });
 
   try {
     console.log(`\n${N} clientes simultâneos | data de teste ${DATA}\n`);
+
+    console.log("== Perfis e privacidade das respostas ==");
+    const publico = await fetch(`${base}/barbeiros/${barbeiro.id}`);
+    const barbeiroPublico = (await publico.json()) as Record<string, unknown>;
+    conferir(
+      "resposta pública do barbeiro não expõe campos privados",
+      publico.status === 200 &&
+        !("senhaHash" in barbeiroPublico) &&
+        !("email" in barbeiroPublico) &&
+        !("telefone" in barbeiroPublico)
+    );
+    const novoAdminEmail = `conc-${RUN}-admin-criado@teste.local`;
+    const adminCriado = await chamar(base, "POST", "/auth/usuarios", tokenAdministrador, {
+      nome: "Administrador Criado no Teste",
+      email: novoAdminEmail,
+      senha: "123456",
+      role: "ADMINISTRADOR",
+    });
+    conferir(
+      "administrador consegue criar outro administrador sem receber senhaHash",
+      adminCriado.status === 201 &&
+        adminCriado.corpo?.role === "ADMINISTRADOR" &&
+        !("senhaHash" in (adminCriado.corpo ?? {}))
+    );
+    const clienteTentandoCriarAdmin = await chamar(base, "POST", "/auth/usuarios", tokens[0], {
+      nome: "Não autorizado",
+      email: `conc-${RUN}-negado@teste.local`,
+      senha: "123456",
+      role: "ADMINISTRADOR",
+    });
+    conferir(
+      "cliente não consegue criar usuários privilegiados",
+      clienteTentandoCriarAdmin.status === 403
+    );
+    const tokenBarbeiro = jwt.sign(
+      { sub: barbeiro.id, role: "BARBEIRO" },
+      env.jwtSecret,
+      { expiresIn: "10m" }
+    );
+    await db.usuario.update({ where: { id: barbeiro.id }, data: { ativo: false } });
+    const acessoComTokenAntigo = await chamar(base, "GET", "/agendamentos", tokenBarbeiro);
+    const barbeirosAtivosResposta = await fetch(`${base}/barbeiros`);
+    const barbeirosAtivos = (await barbeirosAtivosResposta.json()) as Array<{ id: string }>;
+    conferir(
+      "barbeiro desativado some da listagem pública",
+      !barbeirosAtivos.some((item) => item.id === barbeiro.id)
+    );
+    conferir(
+      "token emitido antes da desativação deixa de acessar a API",
+      acessoComTokenAntigo.status === 401
+    );
+    await db.usuario.update({ where: { id: barbeiro.id }, data: { ativo: true } });
+
+    console.log("== Disponibilidade pública considera duração, agendamentos e bloqueios? ==");
+    const ocupadoInicio = combinarDataHora(DATA, "10:00");
+    await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: ocupadoInicio,
+        horaInicio: ocupadoInicio,
+        horaFim: adicionarMinutos(ocupadoInicio, 30),
+      },
+    });
+    await db.bloqueioPeriodo.create({
+      data: {
+        barbeiroId: barbeiro.id,
+        inicio: combinarDataHora(DATA, "11:00"),
+        fim: combinarDataHora(DATA, "12:00"),
+        motivo: "Teste automatizado",
+      },
+    });
+    const horariosResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/horarios?data=${DATA}&servicoId=${servico.id}`
+    );
+    const horarios = (await horariosResposta.json()) as string[];
+    conferir("consulta de horários disponíveis responde 200", horariosResposta.status === 200);
+    conferir(
+      "horários sobrepostos ao atendimento inteiro não aparecem",
+      !["09:45", "10:00", "10:15"].some((hora) => horarios.includes(hora))
+    );
+    conferir(
+      "horários sobrepostos ao bloqueio não aparecem",
+      !["10:45", "11:00", "11:15", "11:30", "11:45"].some((hora) => horarios.includes(hora))
+    );
+    conferir(
+      "horários livres antes e depois dos impedimentos continuam disponíveis",
+      horarios.includes("09:30") && horarios.includes("12:00")
+    );
+    const datasResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/datas?servicoId=${servico.id}&limite=31`
+    );
+    const datas = (await datasResposta.json()) as string[];
+    conferir(
+      "consulta de datas devolve somente dias que possuem algum horário livre",
+      datasResposta.status === 200 && datas.includes(DATA)
+    );
+    await db.bloqueioPeriodo.create({
+      data: {
+        barbeiroId: barbeiro.id,
+        inicio: combinarDataHora(DATA, "00:00"),
+        fim: adicionarMinutos(combinarDataHora(DATA, "00:00"), 24 * 60),
+        motivo: "Dia inteiro bloqueado no teste automatizado",
+      },
+    });
+    const datasAposBloqueioResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/datas?servicoId=${servico.id}&limite=31`
+    );
+    const datasAposBloqueio = (await datasAposBloqueioResposta.json()) as string[];
+    conferir(
+      "dia sem nenhum horário livre não aparece como disponível",
+      datasAposBloqueioResposta.status === 200 && !datasAposBloqueio.includes(DATA)
+    );
+    await limparAgenda();
+    await db.bloqueioPeriodo.deleteMany({ where: { barbeiroId: barbeiro.id } });
+
+    console.log("== Cliente não pode ocupar dois profissionais ao mesmo tempo ==");
+    const inicioCliente = combinarDataHora(DATA, "16:00");
+    await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: inicioCliente,
+        horaInicio: inicioCliente,
+        horaFim: adicionarMinutos(inicioCliente, 30),
+      },
+    });
+    const criacaoSobreposta = await chamar(base, "POST", "/agendamentos", tokens[0], {
+      barbeiroId: barbeiroAlternativo.id,
+      servicoId: servico.id,
+      data: DATA,
+      horaInicio: "16:15",
+    });
+    conferir(
+      "criação com outro barbeiro é recusada quando o cliente já está ocupado",
+      criacaoSobreposta.status === 409 &&
+        String(criacaoSobreposta.corpo?.error).includes("outro agendamento")
+    );
+
+    const inicioOriginal = combinarDataHora(DATA, "18:00");
+    const originalAlternativo = await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiroAlternativo.id,
+        servicoId: servico.id,
+        data: inicioOriginal,
+        horaInicio: inicioOriginal,
+        horaFim: adicionarMinutos(inicioOriginal, 30),
+      },
+    });
+    const reagendamentoSobreposto = await chamar(
+      base,
+      "PATCH",
+      `/agendamentos/${originalAlternativo.id}/reagendar`,
+      tokens[0],
+      { data: DATA, horaInicio: "16:15" }
+    );
+    conferir(
+      "reagendamento com outro barbeiro é recusado quando o cliente já está ocupado",
+      reagendamentoSobreposto.status === 409 &&
+        String(reagendamentoSobreposto.corpo?.error).includes("outro agendamento")
+    );
+    const originalPreservado = await db.agendamento.findUnique({
+      where: { id: originalAlternativo.id },
+      select: { status: true, horaInicio: true },
+    });
+    conferir(
+      "reagendamento recusado preserva o atendimento original",
+      originalPreservado?.status === "CONFIRMADO" &&
+        originalPreservado.horaInicio.getTime() === inicioOriginal.getTime()
+    );
+    await limparAgenda();
+
+    const tentativasMesmoCliente = await Promise.all([
+      chamar(base, "POST", "/agendamentos", tokens[0], {
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: DATA,
+        horaInicio: "17:00",
+      }),
+      chamar(base, "POST", "/agendamentos", tokens[0], {
+        barbeiroId: barbeiroAlternativo.id,
+        servicoId: servico.id,
+        data: DATA,
+        horaInicio: "17:00",
+      }),
+    ]);
+    conferir(
+      "duas requisições simultâneas do mesmo cliente têm somente um vencedor",
+      tentativasMesmoCliente.filter((resposta) => resposta.status === 201).length === 1
+    );
+    conferir(
+      "a requisição simultânea perdedora recebe conflito",
+      tentativasMesmoCliente.filter((resposta) => resposta.status === 409).length === 1
+    );
+    const confirmadosMesmoCliente = await db.agendamento.count({
+      where: { clienteId: clientes[0].id, status: "CONFIRMADO" },
+    });
+    conferir(
+      "o banco mantém somente um horário confirmado para o cliente",
+      confirmadosMesmoCliente === 1
+    );
+    await limparAgenda();
 
     console.log("== 0) A exclusion constraint existe neste banco? ==");
     const [{ existe }] = await db.$queryRaw<{ existe: boolean }[]>`
@@ -139,9 +365,17 @@ async function main() {
     }
 
     console.log("\n== 1b) O erro REAL do banco é traduzido para 409 pela aplicação ==");
+    const clienteParaConflitoBanco = await db.usuario.create({
+      data: {
+        nome: "Cliente Teste Constraint",
+        email: `conc-${RUN}-constraint@teste.local`,
+        senhaHash: "x",
+        role: "CLIENTE",
+      },
+    });
     try {
       await agendamentosRepository
-        .create({ clienteId: clientes[0].id, barbeiroId: barbeiro.id, servicoId: servico.id, data: ini1, horaInicio: ini1, horaFim: fim1 })
+        .create({ clienteId: clienteParaConflitoBanco.id, barbeiroId: barbeiro.id, servicoId: servico.id, data: ini1, horaInicio: ini1, horaFim: fim1 })
         .catch((e: unknown) => traduzirErroDeConflito(e));
       conferir("conflito vindo do banco vira 409 com mensagem amigável", false, "o insert não falhou");
     } catch (e) {
@@ -208,8 +442,8 @@ async function main() {
     const porCliente = await Promise.all(clientes.map((c) => db.agendamento.count({ where: { clienteId: c.id, status: "CONFIRMADO" } })));
     conferir("todo cliente continua com exatamente 1 agendamento confirmado (quem perdeu manteve o original)",
       porCliente.every((n) => n === 1), `contagens: ${porCliente.join(",")}`);
-    const cancelados = await db.agendamento.count({ where: { barbeiroId: barbeiro.id, status: "CANCELADO" } });
-    conferir("só o vencedor teve o horário antigo cancelado", cancelados === 1, `${cancelados}`);
+    const reagendados = await db.agendamento.count({ where: { barbeiroId: barbeiro.id, status: "REAGENDADO" } });
+    conferir("só o vencedor teve o horário antigo marcado como reagendado", reagendados === 1, `${reagendados}`);
   } finally {
     servidor.close();
     await limparSobras();

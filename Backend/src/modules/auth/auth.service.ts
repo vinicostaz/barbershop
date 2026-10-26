@@ -3,6 +3,7 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { authRepository } from "./auth.repository.js";
+import { normalizarEmail } from "../../utils/normalizacao.js";
 
 interface RegisterInput {
   nome: string;
@@ -15,6 +16,10 @@ interface RegisterInput {
 interface LoginInput {
   email: string;
   senha: string;
+}
+
+interface CriarUsuarioAdministrativoInput extends RegisterInput {
+  role: "BARBEIRO" | "ADMINISTRADOR";
 }
 
 function gerarToken(usuario: { id: string; role: string }) {
@@ -49,7 +54,8 @@ export const authService = {
 
     validarCadastro(input);
 
-    const usuarioExistente = await authRepository.findByEmail(input.email);
+    const email = normalizarEmail(input.email);
+    const usuarioExistente = await authRepository.findByEmail(email);
     if (usuarioExistente) {
       throw new AppError("Já existe um usuário cadastrado com este e-mail.", 409);
     }
@@ -57,8 +63,8 @@ export const authService = {
     const senhaHash = await bcrypt.hash(input.senha, 10);
 
     const usuario = await authRepository.create({
-      nome: input.nome,
-      email: input.email,
+      nome: input.nome.trim(),
+      email,
       senhaHash,
       telefone: input.telefone,
       role: "CLIENTE",
@@ -74,7 +80,7 @@ export const authService = {
       throw new AppError("Informe e-mail e senha.");
     }
 
-    const usuario = await authRepository.findByEmail(input.email);
+    const usuario = await authRepository.findByEmail(normalizarEmail(input.email));
     if (!usuario) {
       throw new AppError("E-mail ou senha inválidos.", 401);
     }
@@ -91,5 +97,35 @@ export const authService = {
 
     const token = gerarToken(usuario);
     return { usuario: { id: usuario.id, nome: usuario.nome, role: usuario.role }, token };
+  },
+
+  async criarUsuarioAdministrativo(input: CriarUsuarioAdministrativoInput) {
+    if (input.role !== "BARBEIRO" && input.role !== "ADMINISTRADOR") {
+      throw new AppError("O perfil deve ser BARBEIRO ou ADMINISTRADOR.");
+    }
+    validarCadastro(input);
+
+    const email = normalizarEmail(input.email);
+    const existente = await authRepository.findByEmail(email);
+    if (existente) {
+      throw new AppError("Já existe um usuário cadastrado com este e-mail.", 409);
+    }
+
+    const usuario = await authRepository.create({
+      nome: input.nome.trim(),
+      email,
+      senhaHash: await bcrypt.hash(input.senha, 10),
+      telefone: input.telefone?.trim() || undefined,
+      role: input.role,
+    });
+
+    return {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      role: usuario.role,
+      ativo: usuario.ativo,
+    };
   },
 };

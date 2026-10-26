@@ -7,7 +7,7 @@ export const servicosController = {
     return res.json(servicos);
   },
 
-  async buscarPorId(req: Request, res: Response) {
+  async buscarPorId(req: Request<{ id: string }>, res: Response) {
     const servico = await servicosService.buscarPorId(req.params.id);
     return res.json(servico);
   },
@@ -18,12 +18,12 @@ export const servicosController = {
     return res.status(201).json(servico);
   },
 
-  async atualizar(req: Request, res: Response) {
+  async atualizar(req: Request<{ id: string }>, res: Response) {
     const servico = await servicosService.atualizar(req.params.id, req.body);
     return res.json(servico);
   },
 
-  async remover(req: Request, res: Response) {
+  async remover(req: Request<{ id: string }>, res: Response) {
     await servicosService.remover(req.params.id);
     return res.status(204).send();
   },

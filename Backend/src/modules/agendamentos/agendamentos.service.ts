@@ -51,6 +51,19 @@ async function prepararHorario(params: {
     );
   }
 
+  const conflitoDoCliente = await agendamentosRepository.findConflitanteCliente(
+    params.clienteId,
+    horaInicio,
+    horaFim,
+    params.ignorarAgendamentoId
+  );
+  if (conflitoDoCliente) {
+    throw new AppError(
+      "Você já possui outro agendamento que se sobrepõe a esse horário.",
+      409
+    );
+  }
+
   // horário liberado por cancelamento fica reservado, por um tempo, ao cliente da fila
   const reservado = await filaDeEsperaRepository.findPrioridadeAtiva(
     params.barbeiroId,
@@ -83,6 +96,12 @@ export const agendamentosService = {
   async criar(usuarioLogado: AuthPayload, input: CriarAgendamentoInput) {
     if (usuarioLogado.role !== "CLIENTE") {
       throw new AppError("Apenas clientes podem realizar agendamentos.", 403);
+    }
+    if (typeof input.barbeiroId !== "string" || !input.barbeiroId) {
+      throw new AppError("barbeiroId é obrigatório.");
+    }
+    if (typeof input.servicoId !== "string" || !input.servicoId) {
+      throw new AppError("servicoId é obrigatório.");
     }
 
     const barbeiro = await db.usuario.findFirst({

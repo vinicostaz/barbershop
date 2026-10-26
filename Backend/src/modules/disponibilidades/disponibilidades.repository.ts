@@ -12,6 +12,24 @@ export const disponibilidadesRepository = {
     return db.disponibilidade.findUnique({ where: { id } });
   },
 
+  findSobreposta(
+    barbeiroId: string,
+    diaSemana: number,
+    horaInicio: string,
+    horaFim: string,
+    ignorarId?: string
+  ) {
+    return db.disponibilidade.findFirst({
+      where: {
+        barbeiroId,
+        diaSemana,
+        ...(ignorarId ? { id: { not: ignorarId } } : {}),
+        horaInicio: { lt: horaFim },
+        horaFim: { gt: horaInicio },
+      },
+    });
+  },
+
   create(data: { barbeiroId: string; diaSemana: number; horaInicio: string; horaFim: string }) {
     return db.disponibilidade.create({ data });
   },

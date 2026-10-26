@@ -9,6 +9,7 @@ import { Container } from '../../components/ui/Container/Container'
 import { ApiError } from '../../services/api'
 import {
   appointmentsService,
+  removeCustomerConflictingTimes,
   type Appointment,
 } from '../../services/appointments'
 import {
@@ -274,12 +275,26 @@ function CustomerBooking({
       setIsTimesLoading(true)
 
       try {
-        setAvailableTimes(
-          await catalogService.listAvailableTimes(
+        const selectedService = services.find(
+          (service) => service.id === selectedServiceId,
+        )
+        if (!selectedService) return
+
+        const [times, customerAppointments] = await Promise.all([
+          catalogService.listAvailableTimes(
             selectedProfessionalId,
             selectedDateId,
             selectedServiceId,
             controller.signal,
+          ),
+          appointmentsService.list(token, controller.signal),
+        ])
+        setAvailableTimes(
+          removeCustomerConflictingTimes(
+            times,
+            selectedDateId,
+            selectedService.duracaoMin,
+            customerAppointments,
           ),
         )
       } catch (requestError) {
@@ -300,7 +315,9 @@ function CustomerBooking({
     selectedDateId,
     selectedProfessionalId,
     selectedServiceId,
+    services,
     timesReloadKey,
+    token,
   ])
 
   const selectedService = services.find(

@@ -3,6 +3,7 @@ import { Button } from '../../ui/Button/Button'
 import { Container } from '../../ui/Container/Container'
 import {
   appointmentsService,
+  removeCustomerConflictingTimes,
   type Appointment,
 } from '../../../services/appointments'
 import { ApiError } from '../../../services/api'
@@ -50,6 +51,7 @@ const statusLabels: Record<Appointment['status'], string> = {
   CANCELADO: 'Cancelado',
   CONCLUIDO: 'Concluído',
   CONFIRMADO: 'Confirmado',
+  REAGENDADO: 'Reagendado',
 }
 
 function createAvailableDate(id: string): AvailableDate {
@@ -153,12 +155,22 @@ function RescheduleForm({
       setIsTimesLoading(true)
 
       try {
-        setAvailableTimes(
-          await catalogService.listAvailableTimes(
+        const [times, customerAppointments] = await Promise.all([
+          catalogService.listAvailableTimes(
             appointment.barbeiro.id,
             selectedDateId,
             appointment.servico.id,
             controller.signal,
+          ),
+          appointmentsService.list(token, controller.signal),
+        ])
+        setAvailableTimes(
+          removeCustomerConflictingTimes(
+            times,
+            selectedDateId,
+            appointment.servico.duracaoMin,
+            customerAppointments,
+            appointment.id,
           ),
         )
       } catch (requestError) {
@@ -177,9 +189,12 @@ function RescheduleForm({
     return () => controller.abort()
   }, [
     appointment.barbeiro,
+    appointment.id,
+    appointment.servico.duracaoMin,
     appointment.servico.id,
     selectedDateId,
     timesReloadKey,
+    token,
   ])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

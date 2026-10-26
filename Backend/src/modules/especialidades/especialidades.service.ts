@@ -15,19 +15,28 @@ export const especialidadesService = {
   },
 
   async criar(nome: string) {
-    if (!nome || nome.trim().length === 0) {
+    if (typeof nome !== "string" || nome.trim().length === 0) {
       throw new AppError("O nome da especialidade não pode ser vazio.");
     }
-    const existente = await especialidadesRepository.findByNome(nome);
+    const nomeNormalizado = nome.trim();
+    const existente = await especialidadesRepository.findByNome(nomeNormalizado);
     if (existente) {
       throw new AppError("Já existe uma especialidade com esse nome.", 409);
     }
-    return especialidadesRepository.create({ nome });
+    return especialidadesRepository.create({ nome: nomeNormalizado });
   },
 
   async atualizar(id: string, nome: string) {
     await this.buscarPorId(id);
-    return especialidadesRepository.update(id, { nome });
+    if (typeof nome !== "string" || nome.trim().length === 0) {
+      throw new AppError("O nome da especialidade não pode ser vazio.");
+    }
+    const nomeNormalizado = nome.trim();
+    const existente = await especialidadesRepository.findByNome(nomeNormalizado);
+    if (existente && existente.id !== id) {
+      throw new AppError("Já existe uma especialidade com esse nome.", 409);
+    }
+    return especialidadesRepository.update(id, { nome: nomeNormalizado });
   },
 
   async remover(id: string) {

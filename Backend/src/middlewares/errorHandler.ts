@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import type { ParamsDictionary } from "express-serve-static-core";
 
 export class AppError extends Error {
   statusCode: number;
@@ -24,10 +25,10 @@ export function errorHandler(
 }
 
 // Evita ter que escrever try/catch em todo controller assíncrono.
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+export function asyncHandler<Params extends ParamsDictionary = ParamsDictionary>(
+  fn: (req: Request<Params>, res: Response, next: NextFunction) => Promise<unknown>
 ) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request<Params>, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
