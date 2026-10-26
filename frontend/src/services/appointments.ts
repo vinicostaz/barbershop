@@ -40,6 +40,36 @@ export type RescheduleAppointmentInput = {
   horaInicio: string
 }
 
+export function removeCustomerConflictingTimes(
+  times: string[],
+  date: string,
+  durationMinutes: number,
+  appointments: Appointment[],
+  ignoredAppointmentId?: string,
+) {
+  const [year, month, day] = date.split('-').map(Number)
+
+  return times.filter((time) => {
+    const [hour, minute] = time.split(':').map(Number)
+    const candidateStart = Date.UTC(year, month - 1, day, hour, minute)
+    const candidateEnd = candidateStart + durationMinutes * 60_000
+
+    return !appointments.some((appointment) => {
+      if (
+        appointment.status !== 'CONFIRMADO' ||
+        appointment.id === ignoredAppointmentId
+      ) {
+        return false
+      }
+
+      const appointmentStart = new Date(appointment.horaInicio).getTime()
+      const appointmentEnd = new Date(appointment.horaFim).getTime()
+
+      return appointmentStart < candidateEnd && appointmentEnd > candidateStart
+    })
+  })
+}
+
 function withAuthorization(token: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers)
   headers.set('Authorization', `Bearer ${token}`)
