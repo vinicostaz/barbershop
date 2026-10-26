@@ -51,6 +51,19 @@ async function prepararHorario(params: {
     );
   }
 
+  const conflitoDoCliente = await agendamentosRepository.findConflitanteCliente(
+    params.clienteId,
+    horaInicio,
+    horaFim,
+    params.ignorarAgendamentoId
+  );
+  if (conflitoDoCliente) {
+    throw new AppError(
+      "Você já possui outro agendamento que se sobrepõe a esse horário.",
+      409
+    );
+  }
+
   // horário liberado por cancelamento fica reservado, por um tempo, ao cliente da fila
   const reservado = await filaDeEsperaRepository.findPrioridadeAtiva(
     params.barbeiroId,

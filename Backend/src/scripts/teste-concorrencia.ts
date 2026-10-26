@@ -86,13 +86,18 @@ async function main() {
   const barbeiro = await db.usuario.create({
     data: { nome: "Barbeiro Teste Concorrência", email: `conc-${RUN}-barbeiro@teste.local`, senhaHash: "x", role: "BARBEIRO" },
   });
+  const barbeiroAlternativo = await db.usuario.create({
+    data: { nome: "Segundo Barbeiro Teste", email: `conc-${RUN}-barbeiro-2@teste.local`, senhaHash: "x", role: "BARBEIRO" },
+  });
   const servico = await db.servico.create({
     data: { nome: `Teste Concorrência ${RUN}`, duracaoMin: 30, preco: 1 },
   });
   await db.disponibilidade.createMany({
-    data: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
-      barbeiroId: barbeiro.id, diaSemana, horaInicio: "00:00", horaFim: "23:59",
-    })),
+    data: [barbeiro.id, barbeiroAlternativo.id].flatMap((barbeiroId) =>
+      [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+        barbeiroId, diaSemana, horaInicio: "00:00", horaFim: "23:59",
+      }))
+    ),
   });
   const clientes: { id: string }[] = [];
   for (let i = 1; i <= N; i++) {
@@ -120,7 +125,10 @@ async function main() {
   const servidor = app.listen(0, "127.0.0.1");
   await new Promise<void>((r) => servidor.once("listening", () => r()));
   const base = `http://127.0.0.1:${(servidor.address() as AddressInfo).port}`;
-  const limparAgenda = () => db.agendamento.deleteMany({ where: { barbeiroId: barbeiro.id } });
+  const limparAgenda = () =>
+    db.agendamento.deleteMany({
+      where: { barbeiroId: { in: [barbeiro.id, barbeiroAlternativo.id] } },
+    });
 
   try {
     console.log(`\n${N} clientes simultâneos | data de teste ${DATA}\n`);
@@ -241,6 +249,95 @@ async function main() {
     await limparAgenda();
     await db.bloqueioPeriodo.deleteMany({ where: { barbeiroId: barbeiro.id } });
 
+    console.log("== Cliente não pode ocupar dois profissionais ao mesmo tempo ==");
+    const inicioCliente = combinarDataHora(DATA, "16:00");
+    await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: inicioCliente,
+        horaInicio: inicioCliente,
+        horaFim: adicionarMinutos(inicioCliente, 30),
+      },
+    });
+    const criacaoSobreposta = await chamar(base, "POST", "/agendamentos", tokens[0], {
+      barbeiroId: barbeiroAlternativo.id,
+      servicoId: servico.id,
+      data: DATA,
+      horaInicio: "16:15",
+    });
+    conferir(
+      "criação com outro barbeiro é recusada quando o cliente já está ocupado",
+      criacaoSobreposta.status === 409 &&
+        String(criacaoSobreposta.corpo?.error).includes("outro agendamento")
+    );
+
+    const inicioOriginal = combinarDataHora(DATA, "18:00");
+    const originalAlternativo = await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiroAlternativo.id,
+        servicoId: servico.id,
+        data: inicioOriginal,
+        horaInicio: inicioOriginal,
+        horaFim: adicionarMinutos(inicioOriginal, 30),
+      },
+    });
+    const reagendamentoSobreposto = await chamar(
+      base,
+      "PATCH",
+      `/agendamentos/${originalAlternativo.id}/reagendar`,
+      tokens[0],
+      { data: DATA, horaInicio: "16:15" }
+    );
+    conferir(
+      "reagendamento com outro barbeiro é recusado quando o cliente já está ocupado",
+      reagendamentoSobreposto.status === 409 &&
+        String(reagendamentoSobreposto.corpo?.error).includes("outro agendamento")
+    );
+    const originalPreservado = await db.agendamento.findUnique({
+      where: { id: originalAlternativo.id },
+      select: { status: true, horaInicio: true },
+    });
+    conferir(
+      "reagendamento recusado preserva o atendimento original",
+      originalPreservado?.status === "CONFIRMADO" &&
+        originalPreservado.horaInicio.getTime() === inicioOriginal.getTime()
+    );
+    await limparAgenda();
+
+    const tentativasMesmoCliente = await Promise.all([
+      chamar(base, "POST", "/agendamentos", tokens[0], {
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: DATA,
+        horaInicio: "17:00",
+      }),
+      chamar(base, "POST", "/agendamentos", tokens[0], {
+        barbeiroId: barbeiroAlternativo.id,
+        servicoId: servico.id,
+        data: DATA,
+        horaInicio: "17:00",
+      }),
+    ]);
+    conferir(
+      "duas requisições simultâneas do mesmo cliente têm somente um vencedor",
+      tentativasMesmoCliente.filter((resposta) => resposta.status === 201).length === 1
+    );
+    conferir(
+      "a requisição simultânea perdedora recebe conflito",
+      tentativasMesmoCliente.filter((resposta) => resposta.status === 409).length === 1
+    );
+    const confirmadosMesmoCliente = await db.agendamento.count({
+      where: { clienteId: clientes[0].id, status: "CONFIRMADO" },
+    });
+    conferir(
+      "o banco mantém somente um horário confirmado para o cliente",
+      confirmadosMesmoCliente === 1
+    );
+    await limparAgenda();
+
     console.log("== 0) A exclusion constraint existe neste banco? ==");
     const [{ existe }] = await db.$queryRaw<{ existe: boolean }[]>`
       SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sem_conflito_horario') AS existe`;
@@ -268,9 +365,17 @@ async function main() {
     }
 
     console.log("\n== 1b) O erro REAL do banco é traduzido para 409 pela aplicação ==");
+    const clienteParaConflitoBanco = await db.usuario.create({
+      data: {
+        nome: "Cliente Teste Constraint",
+        email: `conc-${RUN}-constraint@teste.local`,
+        senhaHash: "x",
+        role: "CLIENTE",
+      },
+    });
     try {
       await agendamentosRepository
-        .create({ clienteId: clientes[0].id, barbeiroId: barbeiro.id, servicoId: servico.id, data: ini1, horaInicio: ini1, horaFim: fim1 })
+        .create({ clienteId: clienteParaConflitoBanco.id, barbeiroId: barbeiro.id, servicoId: servico.id, data: ini1, horaInicio: ini1, horaFim: fim1 })
         .catch((e: unknown) => traduzirErroDeConflito(e));
       conferir("conflito vindo do banco vira 409 com mensagem amigável", false, "o insert não falhou");
     } catch (e) {

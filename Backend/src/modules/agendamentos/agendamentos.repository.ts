@@ -1,4 +1,5 @@
 import { db } from "../../prisma/client.js";
+import { AppError } from "../../middlewares/errorHandler.js";
 import { usuarioResumo } from "../../prisma/usuarioSemSenha.js";
 
 const includeCompleto = {
@@ -6,6 +7,24 @@ const includeCompleto = {
   barbeiro: usuarioResumo,
   servico: true,
 } as const;
+
+const mensagemConflitoCliente =
+  "Você já possui outro agendamento que se sobrepõe a esse horário.";
+
+function conflitoDoCliente(
+  clienteId: string,
+  horaInicio: Date,
+  horaFim: Date,
+  ignorarId?: string
+) {
+  return {
+    clienteId,
+    status: "CONFIRMADO" as const,
+    ...(ignorarId ? { id: { not: ignorarId } } : {}),
+    horaInicio: { lt: horaFim },
+    horaFim: { gt: horaInicio },
+  };
+}
 
 export const agendamentosRepository = {
   // ignorarId: usado no reagendamento, pra o agendamento que está sendo movido
@@ -23,7 +42,18 @@ export const agendamentosRepository = {
     });
   },
 
-  create(data: {
+  findConflitanteCliente(
+    clienteId: string,
+    horaInicio: Date,
+    horaFim: Date,
+    ignorarId?: string
+  ) {
+    return db.agendamento.findFirst({
+      where: conflitoDoCliente(clienteId, horaInicio, horaFim, ignorarId),
+    });
+  },
+
+  async create(data: {
     clienteId: string;
     barbeiroId: string;
     servicoId: string;
@@ -31,7 +61,21 @@ export const agendamentosRepository = {
     horaInicio: Date;
     horaFim: Date;
   }) {
-    return db.agendamento.create({ data, include: includeCompleto });
+    return db.$transaction(async (tx) => {
+      // Serializa operações do mesmo cliente. Assim, duas requisições simultâneas
+      // para barbeiros diferentes não conseguem criar horários sobrepostos.
+      await tx.$queryRaw`
+        SELECT 1 AS locked
+        FROM pg_advisory_xact_lock(hashtext(${data.clienteId}))
+      `;
+      const conflito = await tx.agendamento.findFirst({
+        where: conflitoDoCliente(data.clienteId, data.horaInicio, data.horaFim),
+        select: { id: true },
+      });
+      if (conflito) throw new AppError(mensagemConflitoCliente, 409);
+
+      return tx.agendamento.create({ data, include: includeCompleto });
+    });
   },
 
   // Cancela o antigo e cria o novo na MESMA transação: se o novo falhar
@@ -49,6 +93,16 @@ export const agendamentosRepository = {
     }
   ) {
     return db.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT 1 AS locked
+        FROM pg_advisory_xact_lock(hashtext(${novo.clienteId}))
+      `;
+      const conflito = await tx.agendamento.findFirst({
+        where: conflitoDoCliente(novo.clienteId, novo.horaInicio, novo.horaFim, id),
+        select: { id: true },
+      });
+      if (conflito) throw new AppError(mensagemConflitoCliente, 409);
+
       await tx.agendamento.update({ where: { id }, data: { status: "REAGENDADO" } });
       return tx.agendamento.create({ data: novo, include: includeCompleto });
     });
