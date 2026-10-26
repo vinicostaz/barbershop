@@ -152,6 +152,7 @@ export const adminService = {
       withAuthorization(token, {
         body: JSON.stringify({
           email: input.email,
+          especialidadeIds: input.especialidadeIds,
           nome: input.nome,
           senha: input.senha,
           telefone: input.telefone,
@@ -160,15 +161,7 @@ export const adminService = {
       }),
     )
 
-    if (input.especialidadeIds.length === 0) {
-      return normalizeProfessional(professional)
-    }
-
-    return this.updateProfessionalSpecialties(
-      professional.id,
-      input.especialidadeIds,
-      token,
-    )
+    return normalizeProfessional(professional)
   },
 
   async updateProfessional(
@@ -176,19 +169,18 @@ export const adminService = {
     input: Pick<ProfessionalInput, 'especialidadeIds' | 'nome' | 'telefone'>,
     token: string,
   ) {
-    await apiRequest<ApiProfessional>(
+    const professional = await apiRequest<ApiProfessional>(
       `/barbeiros/${id}`,
       withAuthorization(token, {
-        body: JSON.stringify({ nome: input.nome, telefone: input.telefone }),
+        body: JSON.stringify({
+          especialidadeIds: input.especialidadeIds,
+          nome: input.nome,
+          telefone: input.telefone,
+        }),
         method: 'PUT',
       }),
     )
-
-    return this.updateProfessionalSpecialties(
-      id,
-      input.especialidadeIds,
-      token,
-    )
+    return normalizeProfessional(professional)
   },
 
   async updateProfessionalSpecialties(

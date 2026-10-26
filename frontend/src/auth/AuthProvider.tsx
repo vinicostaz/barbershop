@@ -1,4 +1,4 @@
-import { useState, type PropsWithChildren } from 'react'
+import { useEffect, useState, type PropsWithChildren } from 'react'
 import { AuthContext } from './AuthContext'
 import {
   authService,
@@ -7,6 +7,7 @@ import {
   type RegisterInput,
   type UserRole,
 } from '../services/auth'
+import { UNAUTHORIZED_EVENT } from '../services/api'
 
 const SESSION_STORAGE_KEY = 'barbershop:auth-session'
 const userRoles: UserRole[] = ['CLIENTE', 'BARBEIRO', 'ADMINISTRADOR']
@@ -42,6 +43,16 @@ function loadStoredSession() {
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<AuthSession | null>(loadStoredSession)
+
+  useEffect(() => {
+    function clearExpiredSession() {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY)
+      setSession(null)
+    }
+
+    window.addEventListener(UNAUTHORIZED_EVENT, clearExpiredSession)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, clearExpiredSession)
+  }, [])
 
   function saveSession(nextSession: AuthSession) {
     window.localStorage.setItem(
