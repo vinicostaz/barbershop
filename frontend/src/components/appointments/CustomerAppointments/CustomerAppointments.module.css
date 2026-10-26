@@ -175,6 +175,11 @@
   background: #eef5fb;
 }
 
+.reagendado {
+  background: #fff4df;
+  color: #8a5a12;
+}
+
 .card h3 {
   margin: var(--space-6) 0 0;
   color: var(--color-text);

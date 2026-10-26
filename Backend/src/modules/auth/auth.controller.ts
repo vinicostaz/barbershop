@@ -13,4 +13,16 @@ export const authController = {
     const resultado = await authService.login({ email, senha });
     return res.status(200).json(resultado);
   },
+
+  async criarUsuarioAdministrativo(req: Request, res: Response) {
+    const { nome, email, senha, telefone, role } = req.body;
+    const usuario = await authService.criarUsuarioAdministrativo({
+      nome,
+      email,
+      senha,
+      telefone,
+      role,
+    });
+    return res.status(201).json(usuario);
+  },
 };

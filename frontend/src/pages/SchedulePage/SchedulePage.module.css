@@ -560,6 +560,11 @@
   background: #fff1f2;
 }
 
+.reagendado {
+  background: #fff4df;
+  color: #8a5a12;
+}
+
 .cardContent dl {
   display: grid;
   gap: var(--space-2);

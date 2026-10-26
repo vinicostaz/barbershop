@@ -4,3 +4,9 @@
 //   include: { cliente: usuarioSemSenha }          // dentro de um include
 //   db.usuario.findMany({ ...usuarioSemSenha })    // na consulta direta
 export const usuarioSemSenha = { omit: { senhaHash: true } } as const;
+
+// Relações devolvidas em agendamentos e na fila precisam apenas identificar a
+// pessoa. E-mail, telefone, pontos e demais dados da conta não saem nesses payloads.
+export const usuarioResumo = {
+  select: { id: true, nome: true, role: true, ativo: true },
+} as const;

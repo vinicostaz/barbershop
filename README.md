@@ -45,6 +45,23 @@ npm run dev:local
 Nesse modo, o PostgreSQL é encerrado com o backend somente quando tiver sido
 iniciado pelo próprio script.
 
+### Verificações do back-end
+
+Com as dependências instaladas, as verificações que não alteram o banco são:
+
+```bash
+npm run typecheck
+npm test
+npx prisma validate
+```
+
+Com o PostgreSQL local em execução, o teste de integração e concorrência cria
+somente registros temporários identificados como teste e os remove ao final:
+
+```bash
+npm run test:concorrencia
+```
+
 ## Front-end
 
 ```bash

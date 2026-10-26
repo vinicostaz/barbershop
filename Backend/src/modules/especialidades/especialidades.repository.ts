@@ -22,6 +22,9 @@ export const especialidadesRepository = {
   },
 
   delete(id: string) {
-    return db.especialidade.delete({ where: { id } });
+    return db.$transaction(async (tx) => {
+      await tx.barbeiroEspecialidade.deleteMany({ where: { especialidadeId: id } });
+      return tx.especialidade.delete({ where: { id } });
+    });
   },
 };

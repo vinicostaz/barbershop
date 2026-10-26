@@ -1,9 +1,9 @@
 import { db } from "../../prisma/client.js";
-import { usuarioSemSenha } from "../../prisma/usuarioSemSenha.js";
+import { usuarioResumo } from "../../prisma/usuarioSemSenha.js";
 
 const includeCompleto = {
-  cliente: usuarioSemSenha,
-  barbeiro: usuarioSemSenha,
+  cliente: usuarioResumo,
+  barbeiro: usuarioResumo,
   servico: true,
 } as const;
 
@@ -37,7 +37,7 @@ export const filaDeEsperaRepository = {
   findByCliente(clienteId: string) {
     return db.filaDeEspera.findMany({
       where: { clienteId },
-      include: { barbeiro: usuarioSemSenha, servico: true },
+      include: { barbeiro: usuarioResumo, servico: true },
       orderBy: { criadoEm: "desc" },
     });
   },
@@ -45,13 +45,26 @@ export const filaDeEsperaRepository = {
   findByBarbeiro(barbeiroId: string) {
     return db.filaDeEspera.findMany({
       where: { barbeiroId },
-      include: { cliente: usuarioSemSenha, servico: true },
+      include: { cliente: usuarioResumo, servico: true },
       orderBy: { criadoEm: "asc" },
     });
   },
 
   findAll() {
     return db.filaDeEspera.findMany({ include: includeCompleto, orderBy: { criadoEm: "desc" } });
+  },
+
+  findPrioridadesAtivasNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.filaDeEspera.findMany({
+      where: {
+        barbeiroId,
+        status: "NOTIFICADO",
+        expiraEm: { gt: new Date() },
+        horaInicio: { lt: fim },
+        horaFim: { gt: inicio },
+      },
+      select: { horaInicio: true, horaFim: true },
+    });
   },
 
   // NOTIFICADO cujo prazo já passou, em horário que se sobrepõe ao informado
@@ -88,7 +101,7 @@ export const filaDeEsperaRepository = {
   findAguardando(barbeiroId: string, horaInicio: Date, horaFim: Date) {
     return db.filaDeEspera.findMany({
       where: { barbeiroId, status: "AGUARDANDO", ...sobrepoe(horaInicio, horaFim) },
-      include: { barbeiro: usuarioSemSenha },
+      include: { barbeiro: usuarioResumo },
       orderBy: { criadoEm: "asc" },
     });
   },

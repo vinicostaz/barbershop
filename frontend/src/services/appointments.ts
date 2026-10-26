@@ -14,7 +14,7 @@ type ApiAppointment = {
   horaInicio: string
   id: string
   servico: Omit<Service, 'preco'> & { preco: number | string }
-  status: 'CANCELADO' | 'CONCLUIDO' | 'CONFIRMADO'
+  status: 'CANCELADO' | 'CONCLUIDO' | 'CONFIRMADO' | 'REAGENDADO'
 }
 
 export type Appointment = {

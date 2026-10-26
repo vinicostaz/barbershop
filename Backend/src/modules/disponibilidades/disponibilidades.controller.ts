@@ -3,7 +3,7 @@ import { AppError } from "../../middlewares/errorHandler.js";
 import { disponibilidadesService } from "./disponibilidades.service.js";
 
 export const disponibilidadesController = {
-  async listarDatasDisponiveis(req: Request, res: Response) {
+  async listarDatasDisponiveis(req: Request<{ barbeiroId: string }>, res: Response) {
     const servicoId =
       typeof req.query.servicoId === "string" ? req.query.servicoId : "";
     const limite =
@@ -17,7 +17,7 @@ export const disponibilidadesController = {
     return res.json(datas);
   },
 
-  async listarHorariosLivres(req: Request, res: Response) {
+  async listarHorariosLivres(req: Request<{ barbeiroId: string }>, res: Response) {
     const data = typeof req.query.data === "string" ? req.query.data : "";
     const servicoId =
       typeof req.query.servicoId === "string" ? req.query.servicoId : "";
@@ -30,14 +30,14 @@ export const disponibilidadesController = {
     return res.json(horarios);
   },
 
-  async listarPorBarbeiro(req: Request, res: Response) {
+  async listarPorBarbeiro(req: Request<{ barbeiroId: string }>, res: Response) {
     const disponibilidades = await disponibilidadesService.listarPorBarbeiro(
       req.params.barbeiroId
     );
     return res.json(disponibilidades);
   },
 
-  async criar(req: Request, res: Response) {
+  async criar(req: Request<{ barbeiroId: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const { diaSemana, horaInicio, horaFim } = req.body;
     const disponibilidade = await disponibilidadesService.criar(
@@ -48,7 +48,7 @@ export const disponibilidadesController = {
     return res.status(201).json(disponibilidade);
   },
 
-  async atualizar(req: Request, res: Response) {
+  async atualizar(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const disponibilidade = await disponibilidadesService.atualizar(
       req.user,
@@ -58,7 +58,7 @@ export const disponibilidadesController = {
     return res.json(disponibilidade);
   },
 
-  async remover(req: Request, res: Response) {
+  async remover(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     await disponibilidadesService.remover(req.user, req.params.id);
     return res.status(204).send();

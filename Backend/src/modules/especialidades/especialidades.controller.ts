@@ -7,7 +7,7 @@ export const especialidadesController = {
     return res.json(especialidades);
   },
 
-  async buscarPorId(req: Request, res: Response) {
+  async buscarPorId(req: Request<{ id: string }>, res: Response) {
     const especialidade = await especialidadesService.buscarPorId(req.params.id);
     return res.json(especialidade);
   },
@@ -17,12 +17,12 @@ export const especialidadesController = {
     return res.status(201).json(especialidade);
   },
 
-  async atualizar(req: Request, res: Response) {
+  async atualizar(req: Request<{ id: string }>, res: Response) {
     const especialidade = await especialidadesService.atualizar(req.params.id, req.body.nome);
     return res.json(especialidade);
   },
 
-  async remover(req: Request, res: Response) {
+  async remover(req: Request<{ id: string }>, res: Response) {
     await especialidadesService.remover(req.params.id);
     return res.status(204).send();
   },

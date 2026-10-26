@@ -84,6 +84,12 @@ export const agendamentosService = {
     if (usuarioLogado.role !== "CLIENTE") {
       throw new AppError("Apenas clientes podem realizar agendamentos.", 403);
     }
+    if (typeof input.barbeiroId !== "string" || !input.barbeiroId) {
+      throw new AppError("barbeiroId é obrigatório.");
+    }
+    if (typeof input.servicoId !== "string" || !input.servicoId) {
+      throw new AppError("servicoId é obrigatório.");
+    }
 
     const barbeiro = await db.usuario.findFirst({
       where: { id: input.barbeiroId, role: "BARBEIRO" },

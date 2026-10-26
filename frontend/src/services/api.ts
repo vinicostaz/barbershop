@@ -7,6 +7,8 @@ type ErrorPayload = {
   error?: string
 }
 
+export const UNAUTHORIZED_EVENT = 'barbershop:unauthorized'
+
 export class ApiError extends Error {
   status: number
 
@@ -49,6 +51,9 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const payload = data as ErrorPayload | null
+    if (response.status === 401) {
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    }
     throw new ApiError(
       payload?.error ?? 'Não foi possível concluir a solicitação.',
       response.status,

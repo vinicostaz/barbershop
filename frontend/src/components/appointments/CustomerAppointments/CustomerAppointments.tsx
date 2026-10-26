@@ -50,6 +50,7 @@ const statusLabels: Record<Appointment['status'], string> = {
   CANCELADO: 'Cancelado',
   CONCLUIDO: 'Concluído',
   CONFIRMADO: 'Confirmado',
+  REAGENDADO: 'Reagendado',
 }
 
 function createAvailableDate(id: string): AvailableDate {

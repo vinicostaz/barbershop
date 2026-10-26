@@ -13,6 +13,14 @@ export const bloqueiosRepository = {
     return db.bloqueioPeriodo.findMany({ where: { barbeiroId }, orderBy: { inicio: "asc" } });
   },
 
+  findNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.bloqueioPeriodo.findMany({
+      where: { barbeiroId, inicio: { lt: fim }, fim: { gt: inicio } },
+      select: { inicio: true, fim: true },
+      orderBy: { inicio: "asc" },
+    });
+  },
+
   // existe algum bloqueio que se sobrepõe ao intervalo [inicio, fim)?
   // duas faixas [A,B) e [C,D) se sobrepõem quando A < D e C < B
   findSobreposto(barbeiroId: string, inicio: Date, fim: Date) {

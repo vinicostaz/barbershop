@@ -69,6 +69,10 @@ function getErrorMessage(error: unknown, isLogin: boolean) {
     return 'E-mail ou senha inválidos.'
   }
 
+  if (error instanceof ApiError && error.message) {
+    return error.message
+  }
+
   return isLogin
     ? 'Não foi possível entrar. Tente novamente.'
     : 'Não foi possível criar a conta. Tente novamente.'
