@@ -9,7 +9,7 @@ export const notificacoesController = {
     return res.json(notificacoes);
   },
 
-  async marcarComoLida(req: Request, res: Response) {
+  async marcarComoLida(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const notificacao = await notificacoesService.marcarComoLida(req.user, req.params.id);
     return res.json(notificacao);

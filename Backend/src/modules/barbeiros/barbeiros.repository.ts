@@ -5,10 +5,26 @@ const includeEspecialidades = {
   especialidades: { include: { especialidade: true } },
 } as const;
 
+const barbeiroPublico = {
+  select: {
+    id: true,
+    nome: true,
+    ativo: true,
+    especialidades: { include: { especialidade: true } },
+  },
+} as const;
+
 export const barbeirosRepository = {
   findAll(incluirInativos = false) {
+    if (!incluirInativos) {
+      return db.usuario.findMany({
+        where: { role: "BARBEIRO", ativo: true },
+        ...barbeiroPublico,
+        orderBy: { nome: "asc" },
+      });
+    }
     return db.usuario.findMany({
-      where: { role: "BARBEIRO", ...(incluirInativos ? {} : { ativo: true }) },
+      where: { role: "BARBEIRO" },
       include: includeEspecialidades,
       ...usuarioSemSenha,
       orderBy: { nome: "asc" },
@@ -16,8 +32,14 @@ export const barbeirosRepository = {
   },
 
   findById(id: string, incluirInativos = false) {
+    if (!incluirInativos) {
+      return db.usuario.findFirst({
+        where: { id, role: "BARBEIRO", ativo: true },
+        ...barbeiroPublico,
+      });
+    }
     return db.usuario.findFirst({
-      where: { id, role: "BARBEIRO", ...(incluirInativos ? {} : { ativo: true }) },
+      where: { id, role: "BARBEIRO" },
       include: includeEspecialidades,
       ...usuarioSemSenha,
     });
@@ -35,6 +57,28 @@ export const barbeirosRepository = {
     });
   },
 
+  createComEspecialidades(
+    data: { nome: string; email: string; senhaHash: string; telefone?: string },
+    especialidadeIds: string[]
+  ) {
+    return db.$transaction(async (tx) => {
+      const barbeiro = await tx.usuario.create({ data: { ...data, role: "BARBEIRO" } });
+      if (especialidadeIds.length > 0) {
+        await tx.barbeiroEspecialidade.createMany({
+          data: especialidadeIds.map((especialidadeId) => ({
+            barbeiroId: barbeiro.id,
+            especialidadeId,
+          })),
+        });
+      }
+      return tx.usuario.findUniqueOrThrow({
+        where: { id: barbeiro.id },
+        include: includeEspecialidades,
+        ...usuarioSemSenha,
+      });
+    });
+  },
+
   update(id: string, data: Partial<{ nome: string; telefone: string }>) {
     return db.usuario.update({
       where: { id },
@@ -42,6 +86,36 @@ export const barbeirosRepository = {
       include: includeEspecialidades,
       ...usuarioSemSenha,
     });
+  },
+
+  updateComEspecialidades(
+    id: string,
+    data: Partial<{ nome: string; telefone: string }>,
+    especialidadeIds?: string[]
+  ) {
+    return db.$transaction(async (tx) => {
+      await tx.usuario.update({ where: { id }, data });
+      if (especialidadeIds !== undefined) {
+        await tx.barbeiroEspecialidade.deleteMany({ where: { barbeiroId: id } });
+        if (especialidadeIds.length > 0) {
+          await tx.barbeiroEspecialidade.createMany({
+            data: especialidadeIds.map((especialidadeId) => ({
+              barbeiroId: id,
+              especialidadeId,
+            })),
+          });
+        }
+      }
+      return tx.usuario.findUniqueOrThrow({
+        where: { id },
+        include: includeEspecialidades,
+        ...usuarioSemSenha,
+      });
+    });
+  },
+
+  contarEspecialidades(ids: string[]) {
+    return db.especialidade.count({ where: { id: { in: ids } } });
   },
 
   setAtivo(id: string, ativo: boolean) {

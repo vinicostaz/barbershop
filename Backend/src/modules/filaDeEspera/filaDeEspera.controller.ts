@@ -15,7 +15,7 @@ export const filaDeEsperaController = {
     return res.status(201).json(entrada);
   },
 
-  async confirmar(req: Request, res: Response) {
+  async confirmar(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const agendamento = await filaDeEsperaService.confirmar(req.user, req.params.id);
     return res.status(201).json(agendamento);

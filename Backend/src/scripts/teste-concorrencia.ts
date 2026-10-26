@@ -103,6 +103,19 @@ async function main() {
     );
   }
   const tokens = clientes.map((c) => jwt.sign({ sub: c.id, role: "CLIENTE" }, env.jwtSecret, { expiresIn: "10m" }));
+  const administrador = await db.usuario.create({
+    data: {
+      nome: "Administrador Teste Concorrência",
+      email: `conc-${RUN}-admin@teste.local`,
+      senhaHash: "x",
+      role: "ADMINISTRADOR",
+    },
+  });
+  const tokenAdministrador = jwt.sign(
+    { sub: administrador.id, role: "ADMINISTRADOR" },
+    env.jwtSecret,
+    { expiresIn: "10m" }
+  );
 
   const servidor = app.listen(0, "127.0.0.1");
   await new Promise<void>((r) => servidor.once("listening", () => r()));
@@ -111,6 +124,122 @@ async function main() {
 
   try {
     console.log(`\n${N} clientes simultâneos | data de teste ${DATA}\n`);
+
+    console.log("== Perfis e privacidade das respostas ==");
+    const publico = await fetch(`${base}/barbeiros/${barbeiro.id}`);
+    const barbeiroPublico = (await publico.json()) as Record<string, unknown>;
+    conferir(
+      "resposta pública do barbeiro não expõe campos privados",
+      publico.status === 200 &&
+        !("senhaHash" in barbeiroPublico) &&
+        !("email" in barbeiroPublico) &&
+        !("telefone" in barbeiroPublico)
+    );
+    const novoAdminEmail = `conc-${RUN}-admin-criado@teste.local`;
+    const adminCriado = await chamar(base, "POST", "/auth/usuarios", tokenAdministrador, {
+      nome: "Administrador Criado no Teste",
+      email: novoAdminEmail,
+      senha: "123456",
+      role: "ADMINISTRADOR",
+    });
+    conferir(
+      "administrador consegue criar outro administrador sem receber senhaHash",
+      adminCriado.status === 201 &&
+        adminCriado.corpo?.role === "ADMINISTRADOR" &&
+        !("senhaHash" in (adminCriado.corpo ?? {}))
+    );
+    const clienteTentandoCriarAdmin = await chamar(base, "POST", "/auth/usuarios", tokens[0], {
+      nome: "Não autorizado",
+      email: `conc-${RUN}-negado@teste.local`,
+      senha: "123456",
+      role: "ADMINISTRADOR",
+    });
+    conferir(
+      "cliente não consegue criar usuários privilegiados",
+      clienteTentandoCriarAdmin.status === 403
+    );
+    const tokenBarbeiro = jwt.sign(
+      { sub: barbeiro.id, role: "BARBEIRO" },
+      env.jwtSecret,
+      { expiresIn: "10m" }
+    );
+    await db.usuario.update({ where: { id: barbeiro.id }, data: { ativo: false } });
+    const acessoComTokenAntigo = await chamar(base, "GET", "/agendamentos", tokenBarbeiro);
+    const barbeirosAtivosResposta = await fetch(`${base}/barbeiros`);
+    const barbeirosAtivos = (await barbeirosAtivosResposta.json()) as Array<{ id: string }>;
+    conferir(
+      "barbeiro desativado some da listagem pública",
+      !barbeirosAtivos.some((item) => item.id === barbeiro.id)
+    );
+    conferir(
+      "token emitido antes da desativação deixa de acessar a API",
+      acessoComTokenAntigo.status === 401
+    );
+    await db.usuario.update({ where: { id: barbeiro.id }, data: { ativo: true } });
+
+    console.log("== Disponibilidade pública considera duração, agendamentos e bloqueios? ==");
+    const ocupadoInicio = combinarDataHora(DATA, "10:00");
+    await db.agendamento.create({
+      data: {
+        clienteId: clientes[0].id,
+        barbeiroId: barbeiro.id,
+        servicoId: servico.id,
+        data: ocupadoInicio,
+        horaInicio: ocupadoInicio,
+        horaFim: adicionarMinutos(ocupadoInicio, 30),
+      },
+    });
+    await db.bloqueioPeriodo.create({
+      data: {
+        barbeiroId: barbeiro.id,
+        inicio: combinarDataHora(DATA, "11:00"),
+        fim: combinarDataHora(DATA, "12:00"),
+        motivo: "Teste automatizado",
+      },
+    });
+    const horariosResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/horarios?data=${DATA}&servicoId=${servico.id}`
+    );
+    const horarios = (await horariosResposta.json()) as string[];
+    conferir("consulta de horários disponíveis responde 200", horariosResposta.status === 200);
+    conferir(
+      "horários sobrepostos ao atendimento inteiro não aparecem",
+      !["09:45", "10:00", "10:15"].some((hora) => horarios.includes(hora))
+    );
+    conferir(
+      "horários sobrepostos ao bloqueio não aparecem",
+      !["10:45", "11:00", "11:15", "11:30", "11:45"].some((hora) => horarios.includes(hora))
+    );
+    conferir(
+      "horários livres antes e depois dos impedimentos continuam disponíveis",
+      horarios.includes("09:30") && horarios.includes("12:00")
+    );
+    const datasResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/datas?servicoId=${servico.id}&limite=31`
+    );
+    const datas = (await datasResposta.json()) as string[];
+    conferir(
+      "consulta de datas devolve somente dias que possuem algum horário livre",
+      datasResposta.status === 200 && datas.includes(DATA)
+    );
+    await db.bloqueioPeriodo.create({
+      data: {
+        barbeiroId: barbeiro.id,
+        inicio: combinarDataHora(DATA, "00:00"),
+        fim: adicionarMinutos(combinarDataHora(DATA, "00:00"), 24 * 60),
+        motivo: "Dia inteiro bloqueado no teste automatizado",
+      },
+    });
+    const datasAposBloqueioResposta = await fetch(
+      `${base}/disponibilidades/barbeiros/${barbeiro.id}/datas?servicoId=${servico.id}&limite=31`
+    );
+    const datasAposBloqueio = (await datasAposBloqueioResposta.json()) as string[];
+    conferir(
+      "dia sem nenhum horário livre não aparece como disponível",
+      datasAposBloqueioResposta.status === 200 && !datasAposBloqueio.includes(DATA)
+    );
+    await limparAgenda();
+    await db.bloqueioPeriodo.deleteMany({ where: { barbeiroId: barbeiro.id } });
 
     console.log("== 0) A exclusion constraint existe neste banco? ==");
     const [{ existe }] = await db.$queryRaw<{ existe: boolean }[]>`
@@ -208,8 +337,8 @@ async function main() {
     const porCliente = await Promise.all(clientes.map((c) => db.agendamento.count({ where: { clienteId: c.id, status: "CONFIRMADO" } })));
     conferir("todo cliente continua com exatamente 1 agendamento confirmado (quem perdeu manteve o original)",
       porCliente.every((n) => n === 1), `contagens: ${porCliente.join(",")}`);
-    const cancelados = await db.agendamento.count({ where: { barbeiroId: barbeiro.id, status: "CANCELADO" } });
-    conferir("só o vencedor teve o horário antigo cancelado", cancelados === 1, `${cancelados}`);
+    const reagendados = await db.agendamento.count({ where: { barbeiroId: barbeiro.id, status: "REAGENDADO" } });
+    conferir("só o vencedor teve o horário antigo marcado como reagendado", reagendados === 1, `${reagendados}`);
   } finally {
     servidor.close();
     await limparSobras();

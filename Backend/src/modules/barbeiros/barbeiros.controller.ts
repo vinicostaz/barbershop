@@ -13,24 +13,34 @@ export const barbeirosController = {
     return res.json(barbeiros);
   },
 
-  async buscarPorId(req: Request, res: Response) {
+  async buscarPorId(req: Request<{ id: string }>, res: Response) {
     const barbeiro = await barbeirosService.buscarPorId(req.params.id);
     return res.json(barbeiro);
   },
 
   async criar(req: Request, res: Response) {
-    const { nome, email, senha, telefone } = req.body;
-    const barbeiro = await barbeirosService.criar({ nome, email, senha, telefone });
+    const { nome, email, senha, telefone, especialidadeIds } = req.body;
+    const barbeiro = await barbeirosService.criar({
+      nome,
+      email,
+      senha,
+      telefone,
+      especialidadeIds,
+    });
     return res.status(201).json(barbeiro);
   },
 
-  async atualizar(req: Request, res: Response) {
-    const { nome, telefone } = req.body;
-    const barbeiro = await barbeirosService.atualizar(req.params.id, { nome, telefone });
+  async atualizar(req: Request<{ id: string }>, res: Response) {
+    const { nome, telefone, especialidadeIds } = req.body;
+    const barbeiro = await barbeirosService.atualizar(req.params.id, {
+      nome,
+      telefone,
+      especialidadeIds,
+    });
     return res.json(barbeiro);
   },
 
-  async atualizarEspecialidades(req: Request, res: Response) {
+  async atualizarEspecialidades(req: Request<{ id: string }>, res: Response) {
     const barbeiro = await barbeirosService.atualizarEspecialidades(
       req.params.id,
       req.body.especialidadeIds
@@ -38,7 +48,7 @@ export const barbeirosController = {
     return res.json(barbeiro);
   },
 
-  async alterarAtivo(req: Request, res: Response) {
+  async alterarAtivo(req: Request<{ id: string }>, res: Response) {
     const barbeiro = await barbeirosService.alterarAtivo(req.params.id, req.body.ativo);
     return res.json(barbeiro);
   },

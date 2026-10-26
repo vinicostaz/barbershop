@@ -1,0 +1,1 @@
+ALTER TYPE "StatusAgendamento" ADD VALUE 'REAGENDADO';

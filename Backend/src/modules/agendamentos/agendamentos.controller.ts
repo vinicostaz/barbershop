@@ -15,7 +15,7 @@ export const agendamentosController = {
     return res.status(201).json(agendamento);
   },
 
-  async reagendar(req: Request, res: Response) {
+  async reagendar(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const { data, horaInicio } = req.body;
     const agendamento = await agendamentosService.reagendar(req.user, req.params.id, {
@@ -25,7 +25,7 @@ export const agendamentosController = {
     return res.json(agendamento);
   },
 
-  async cancelar(req: Request, res: Response) {
+  async cancelar(req: Request<{ id: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const agendamento = await agendamentosService.cancelar(req.user, req.params.id);
     return res.json(agendamento);

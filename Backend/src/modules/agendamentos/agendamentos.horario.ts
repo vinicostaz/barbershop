@@ -9,14 +9,31 @@ import { adicionarMinutos, combinarDataHora, formatarHora } from "./agendamentos
 const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+export function validarData(data: string) {
+  if (typeof data !== "string" || !DATA_REGEX.test(data)) {
+    throw new AppError("data deve estar no formato AAAA-MM-DD.");
+  }
+
+  const [ano, mes, dia] = data.split("-").map(Number);
+  const dataUtc = new Date(Date.UTC(ano, mes - 1, dia));
+  if (
+    dataUtc.getUTCFullYear() !== ano ||
+    dataUtc.getUTCMonth() !== mes - 1 ||
+    dataUtc.getUTCDate() !== dia
+  ) {
+    throw new AppError("Data inválida.");
+  }
+}
+
 // Valida o formato, recusa horários que já passaram e calcula o intervalo
 // [horaInicio, horaFim) do atendimento.
 export function calcularHorario(data: string, hora: string, duracaoMin: number) {
-  if (!DATA_REGEX.test(data ?? "")) {
-    throw new AppError("data deve estar no formato AAAA-MM-DD.");
-  }
+  validarData(data);
   if (!HORA_REGEX.test(hora ?? "")) {
     throw new AppError("horaInicio deve estar no formato HH:mm.");
+  }
+  if (!Number.isInteger(duracaoMin) || duracaoMin <= 0) {
+    throw new AppError("A duração do serviço deve ser maior que zero.");
   }
   const horaInicio = combinarDataHora(data, hora);
   if (horaInicio.getTime() < agoraComoHoraDeParede().getTime()) {

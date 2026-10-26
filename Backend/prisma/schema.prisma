@@ -17,6 +17,7 @@ enum StatusAgendamento {
   CONFIRMADO
   CANCELADO
   CONCLUIDO
+  REAGENDADO
 }
 
 enum StatusFila {

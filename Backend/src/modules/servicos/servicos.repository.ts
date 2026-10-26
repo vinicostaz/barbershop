@@ -23,4 +23,12 @@ export const servicosRepository = {
   delete(id: string) {
     return db.servico.delete({ where: { id } });
   },
+
+  async contarUsos(id: string) {
+    const [agendamentos, fila] = await db.$transaction([
+      db.agendamento.count({ where: { servicoId: id } }),
+      db.filaDeEspera.count({ where: { servicoId: id } }),
+    ]);
+    return agendamentos + fila;
+  },
 };

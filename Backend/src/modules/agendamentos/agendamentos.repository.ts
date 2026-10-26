@@ -1,9 +1,9 @@
 import { db } from "../../prisma/client.js";
-import { usuarioSemSenha } from "../../prisma/usuarioSemSenha.js";
+import { usuarioResumo } from "../../prisma/usuarioSemSenha.js";
 
 const includeCompleto = {
-  cliente: usuarioSemSenha,
-  barbeiro: usuarioSemSenha,
+  cliente: usuarioResumo,
+  barbeiro: usuarioResumo,
   servico: true,
 } as const;
 
@@ -49,7 +49,7 @@ export const agendamentosRepository = {
     }
   ) {
     return db.$transaction(async (tx) => {
-      await tx.agendamento.update({ where: { id }, data: { status: "CANCELADO" } });
+      await tx.agendamento.update({ where: { id }, data: { status: "REAGENDADO" } });
       return tx.agendamento.create({ data: novo, include: includeCompleto });
     });
   },
@@ -61,7 +61,7 @@ export const agendamentosRepository = {
   findByCliente(clienteId: string) {
     return db.agendamento.findMany({
       where: { clienteId },
-      include: { barbeiro: usuarioSemSenha, servico: true },
+      include: { barbeiro: usuarioResumo, servico: true },
       orderBy: { horaInicio: "desc" },
     });
   },
@@ -69,7 +69,7 @@ export const agendamentosRepository = {
   findByBarbeiro(barbeiroId: string) {
     return db.agendamento.findMany({
       where: { barbeiroId },
-      include: { cliente: usuarioSemSenha, servico: true },
+      include: { cliente: usuarioResumo, servico: true },
       orderBy: { horaInicio: "asc" },
     });
   },
@@ -81,7 +81,20 @@ export const agendamentosRepository = {
     });
   },
 
-  updateStatus(id: string, status: "CONFIRMADO" | "CANCELADO" | "CONCLUIDO") {
+  findConfirmadosNoPeriodo(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.agendamento.findMany({
+      where: {
+        barbeiroId,
+        status: "CONFIRMADO",
+        horaInicio: { lt: fim },
+        horaFim: { gt: inicio },
+      },
+      select: { horaInicio: true, horaFim: true },
+      orderBy: { horaInicio: "asc" },
+    });
+  },
+
+  updateStatus(id: string, status: "CONFIRMADO" | "CANCELADO" | "CONCLUIDO" | "REAGENDADO") {
     return db.agendamento.update({ where: { id }, data: { status } });
   },
 };
