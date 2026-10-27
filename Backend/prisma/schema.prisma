@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENTE
+  BARBEIRO
+  ADMINISTRADOR
+}
+
+enum StatusAgendamento {
+  CONFIRMADO
+  CANCELADO
+  CONCLUIDO
+  REAGENDADO
+}
+
+enum StatusFila {
+  AGUARDANDO
+  NOTIFICADO
+  CONFIRMADO
+  EXPIRADO
+}
+
+enum TipoNotificacao {
+  HORARIO_LIBERADO
+  PRIORIDADE_EXPIRADA
+}
+
+model Usuario {
+  id               String   @id @default(uuid())
+  nome             String
+  email            String   @unique
+  senhaHash        String
+  telefone         String?
+  role             Role
+  pontosFidelidade Int      @default(0)
+  ativo            Boolean  @default(true)
+  criadoEm         DateTime @default(now())
+
+  // preenchido apenas quando role = BARBEIRO
+  disponibilidades         Disponibilidade[]       @relation("BarbeiroDisponibilidade")
+  especialidades           BarbeiroEspecialidade[]
+  agendamentosComoBarbeiro Agendamento[]           @relation("AgendamentosBarbeiro")
+
+  // preenchido apenas quando role = CLIENTE
+  agendamentosComoCliente Agendamento[]  @relation("AgendamentosCliente")
+  favoritos               Favorito[]
+  avaliacoes              Avaliacao[]
+  filaDeEspera            FilaDeEspera[]  @relation("FilaCliente")
+  notificacoes            Notificacao[]
+  filaComoBarbeiro        FilaDeEspera[]  @relation("FilaBarbeiro")
+  bloqueios               BloqueioPeriodo[]
+
+  @@map("usuarios")
+}
+
+model Servico {
+  id           String        @id @default(uuid())
+  nome         String
+  descricao    String?
+  duracaoMin   Int
+  preco        Decimal       @db.Decimal(10, 2)
+  agendamentos Agendamento[]
+  filaDeEspera FilaDeEspera[]
+
+  @@map("servicos")
+}
+
+model Especialidade {
+  id        String                  @id @default(uuid())
+  nome      String                  @unique
+  barbeiros BarbeiroEspecialidade[]
+
+  @@map("especialidades")
+}
+
+model BarbeiroEspecialidade {
+  barbeiroId      String
+  especialidadeId String
+  barbeiro        Usuario       @relation(fields: [barbeiroId], references: [id])
+  especialidade   Especialidade @relation(fields: [especialidadeId], references: [id])
+
+  @@id([barbeiroId, especialidadeId])
+  @@map("barbeiro_especialidades")
+}
+
+model Disponibilidade {
+  id         String  @id @default(uuid())
+  barbeiroId String
+  barbeiro   Usuario @relation("BarbeiroDisponibilidade", fields: [barbeiroId], references: [id])
+  diaSemana  Int // 0 = domingo ... 6 = sábado
+  horaInicio String // "09:00"
+  horaFim    String // "18:00"
+
+  @@map("disponibilidades")
+}
+
+model Agendamento {
+  id         String            @id @default(uuid())
+  clienteId  String
+  barbeiroId String
+  servicoId  String
+  data       DateTime          @db.Date
+  horaInicio DateTime
+  horaFim    DateTime
+  status     StatusAgendamento @default(CONFIRMADO)
+  criadoEm   DateTime          @default(now())
+
+  cliente   Usuario    @relation("AgendamentosCliente", fields: [clienteId], references: [id])
+  barbeiro  Usuario    @relation("AgendamentosBarbeiro", fields: [barbeiroId], references: [id])
+  servico   Servico    @relation(fields: [servicoId], references: [id])
+  avaliacao Avaliacao?
+
+  @@map("agendamentos")
+}
+
+model FilaDeEspera {
+  id         String     @id @default(uuid())
+  clienteId  String
+  barbeiroId String
+  servicoId  String
+  horaInicio DateTime
+  horaFim    DateTime
+  status     StatusFila @default(AGUARDANDO)
+  expiraEm   DateTime? 
+  criadoEm   DateTime   @default(now())
+
+  cliente      Usuario       @relation("FilaCliente", fields: [clienteId], references: [id])
+  barbeiro     Usuario       @relation("FilaBarbeiro", fields: [barbeiroId], references: [id])
+  servico      Servico       @relation(fields: [servicoId], references: [id])
+  notificacoes Notificacao[]
+
+  @@index([barbeiroId, horaInicio, status])
+  @@map("fila_de_espera")
+}
+
+model Avaliacao {
+  id            String   @id @default(uuid())
+  agendamentoId String   @unique
+  clienteId     String
+  nota          Int
+  comentario    String?
+  criadoEm      DateTime @default(now())
+
+  agendamento Agendamento @relation(fields: [agendamentoId], references: [id])
+  cliente     Usuario     @relation(fields: [clienteId], references: [id])
+
+  @@map("avaliacoes")
+}
+
+model Favorito {
+  clienteId  String
+  barbeiroId String
+  cliente    Usuario @relation(fields: [clienteId], references: [id])
+
+  @@id([clienteId, barbeiroId])
+  @@map("favoritos")
+}
+
+model Notificacao {
+  id             String          @id @default(uuid())
+  usuarioId      String
+  tipo           TipoNotificacao
+  mensagem       String
+  lida           Boolean         @default(false)
+  filaDeEsperaId String?
+  criadoEm       DateTime        @default(now())
+
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  filaDeEspera FilaDeEspera? @relation(fields: [filaDeEsperaId], references: [id])
+
+  @@index([usuarioId, lida])
+  @@map("notificacoes")
+}
+
+model BloqueioPeriodo {
+  id         String   @id @default(uuid())
+  barbeiroId String
+  inicio     DateTime // início do período bloqueado
+  fim        DateTime // fim do período (exclusivo)
+  motivo     String?
+  criadoEm   DateTime @default(now())
+
+  barbeiro Usuario @relation(fields: [barbeiroId], references: [id])
+
+  @@index([barbeiroId, inicio])
+  @@map("bloqueios_periodo")
+}

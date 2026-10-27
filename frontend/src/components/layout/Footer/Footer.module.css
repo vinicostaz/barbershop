@@ -1,0 +1,29 @@
+.footer {
+  padding-block: var(--space-12);
+  color: var(--color-text-on-dark-muted);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(90, 67, 56, 0.3), transparent 32%),
+    var(--color-navy-950);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.description {
+  max-width: 30rem;
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+}
+
+@media (max-width: 40rem) {
+  .content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

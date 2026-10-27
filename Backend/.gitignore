@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+scripts/dev.local.sh
+
+/src/generated/prisma
+
+/src/generated/prisma

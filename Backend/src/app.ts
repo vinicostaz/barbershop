@@ -1,0 +1,32 @@
+import cors from "cors";
+import express from "express";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { agendamentosRoutes } from "./modules/agendamentos/agendamentos.routes.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
+import { barbeirosRoutes } from "./modules/barbeiros/barbeiros.routes.js";
+import { bloqueiosRoutes } from "./modules/bloqueios/bloqueios.routes.js";
+import { disponibilidadesRoutes } from "./modules/disponibilidades/disponibilidades.routes.js";
+import { especialidadesRoutes } from "./modules/especialidades/especialidades.routes.js";
+import { filaDeEsperaRoutes } from "./modules/filaDeEspera/filaDeEspera.routes.js";
+import { notificacoesRoutes } from "./modules/notificacoes/notificacoes.routes.js";
+import { servicosRoutes } from "./modules/servicos/servicos.routes.js";
+
+export const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+app.use("/auth", authRoutes);
+app.use("/servicos", servicosRoutes);
+app.use("/especialidades", especialidadesRoutes);
+app.use("/barbeiros", barbeirosRoutes);
+app.use("/disponibilidades", disponibilidadesRoutes);
+app.use("/bloqueios", bloqueiosRoutes);
+app.use("/agendamentos", agendamentosRoutes);
+app.use("/fila-de-espera", filaDeEsperaRoutes);
+app.use("/notificacoes", notificacoesRoutes);
+
+// o error handler tem que ser o ÚLTIMO middleware registrado
+app.use(errorHandler);

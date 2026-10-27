@@ -1,0 +1,24 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  color: var(--color-text-on-dark);
+  background: color-mix(in srgb, var(--color-navy-950) 94%, transparent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+}
+
+.content {
+  min-height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+@media (max-width: 72rem) {
+  .content {
+    min-height: 4.5rem;
+    gap: var(--space-4);
+  }
+}

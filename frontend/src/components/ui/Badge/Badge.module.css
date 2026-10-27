@@ -1,0 +1,32 @@
+.badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.45rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.blue {
+  color: var(--color-primary);
+  background: rgba(48, 76, 106, 0.09);
+  border-color: rgba(48, 76, 106, 0.18);
+}
+
+.brown {
+  color: var(--color-secondary);
+  background: rgba(90, 67, 56, 0.09);
+  border-color: rgba(90, 67, 56, 0.18);
+}
+
+.neutral {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}

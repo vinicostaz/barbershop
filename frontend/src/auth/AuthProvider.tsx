@@ -1,0 +1,91 @@
+import { useEffect, useState, type PropsWithChildren } from 'react'
+import { AuthContext } from './AuthContext'
+import {
+  authService,
+  type AuthSession,
+  type LoginInput,
+  type RegisterInput,
+  type UserRole,
+} from '../services/auth'
+import { UNAUTHORIZED_EVENT } from '../services/api'
+
+const SESSION_STORAGE_KEY = 'barbershop:auth-session'
+const userRoles: UserRole[] = ['CLIENTE', 'BARBEIRO', 'ADMINISTRADOR']
+
+function isAuthSession(value: unknown): value is AuthSession {
+  if (!value || typeof value !== 'object') return false
+
+  const session = value as Partial<AuthSession>
+  const user = session.usuario
+
+  return Boolean(
+    typeof session.token === 'string' &&
+      session.token.length > 0 &&
+      user &&
+      typeof user.id === 'string' &&
+      typeof user.nome === 'string' &&
+      typeof user.role === 'string' &&
+      userRoles.includes(user.role as UserRole),
+  )
+}
+
+function loadStoredSession() {
+  try {
+    const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY)
+    if (!storedSession) return null
+
+    const parsedSession: unknown = JSON.parse(storedSession)
+    return isAuthSession(parsedSession) ? parsedSession : null
+  } catch {
+    return null
+  }
+}
+
+export function AuthProvider({ children }: PropsWithChildren) {
+  const [session, setSession] = useState<AuthSession | null>(loadStoredSession)
+
+  useEffect(() => {
+    function clearExpiredSession() {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY)
+      setSession(null)
+    }
+
+    window.addEventListener(UNAUTHORIZED_EVENT, clearExpiredSession)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, clearExpiredSession)
+  }, [])
+
+  function saveSession(nextSession: AuthSession) {
+    window.localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify(nextSession),
+    )
+    setSession(nextSession)
+  }
+
+  async function login(input: LoginInput) {
+    const nextSession = await authService.login(input)
+    saveSession(nextSession)
+    return nextSession
+  }
+
+  async function register(input: RegisterInput) {
+    const nextSession = await authService.register(input)
+    saveSession(nextSession)
+    return nextSession
+  }
+
+  function logout() {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY)
+    setSession(null)
+  }
+
+  const value = {
+    isAuthenticated: Boolean(session),
+    login,
+    logout,
+    register,
+    session,
+  }
+
+  return <AuthContext value={value}>{children}</AuthContext>
+}
