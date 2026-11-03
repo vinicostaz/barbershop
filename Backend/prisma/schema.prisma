@@ -25,6 +25,7 @@ enum StatusFila {
   NOTIFICADO
   CONFIRMADO
   EXPIRADO
+  DESISTIU
 }
 
 enum TipoNotificacao {
