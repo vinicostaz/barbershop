@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { AdminDashboard } from '../../components/admin/AdminDashboard'
 import { ProfessionalsManager } from '../../components/admin/ProfessionalsManager'
 import { ServicesManager } from '../../components/admin/ServicesManager'
 import { SpecialtiesManager } from '../../components/admin/SpecialtiesManager'
@@ -82,19 +83,21 @@ export function AdminPage() {
             <Badge tone="brown">Área administrativa</Badge>
             <h1 id="titulo-administrativo">Controle da barbearia em um só lugar.</h1>
             <p>
-              Olá, {session?.usuario.nome.split(' ')[0]}. Esta é a estrutura
-              inicial para acompanhar e gerenciar a operação da barbearia.
+              Olá, {session?.usuario.nome.split(' ')[0]}. Acompanhe a operação,
+              antecipe os próximos atendimentos e gerencie a equipe em um só lugar.
             </p>
           </div>
 
           <aside className={styles.accessCard} aria-label="Informações de acesso">
             <span className={styles.accessLabel}>Acesso atual</span>
             <strong>Administrador</strong>
-            <p>Perfil autorizado para visualizar a estrutura administrativa.</p>
+            <p>Visão consolidada da agenda, do catálogo e da equipe.</p>
           </aside>
         </header>
 
-        <div className={styles.sectionHeading}>
+        {session && <AdminDashboard token={session.token} />}
+
+        <div className={styles.sectionHeading} id="admin-modules">
           <div>
             <span>Gestão da operação</span>
             <h2>Módulos administrativos</h2>
