@@ -304,14 +304,12 @@
   font-weight: 800;
 }
 
-.dateOptions,
 .timeOptions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
-.dateOptions button,
 .timeOptions button {
   min-height: 3.25rem;
   display: grid;
@@ -331,31 +329,15 @@
     transform var(--transition-fast);
 }
 
-.dateOptions button:hover,
 .timeOptions button:hover {
   transform: translateY(-1px);
   border-color: var(--color-primary);
 }
 
-.dateOptions button span {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  text-transform: capitalize;
-}
-
-.dateOptions button strong {
-  font-size: var(--font-size-sm);
-}
-
-.dateOptions .selectedOption,
 .timeOptions .selectedOption {
   color: var(--color-white);
   background: var(--color-primary);
   border-color: var(--color-primary);
-}
-
-.dateOptions .selectedOption span {
-  color: var(--color-text-on-dark-muted);
 }
 
 .actionState,
@@ -413,7 +395,6 @@
     border-radius: var(--radius-lg);
   }
 
-  .dateOptions,
   .timeOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

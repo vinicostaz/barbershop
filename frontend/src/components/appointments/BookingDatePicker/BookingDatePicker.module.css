@@ -191,6 +191,30 @@
   line-height: 1.5;
 }
 
+.compact .toolbar {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.compact .toolbar > p {
+  text-align: left;
+}
+
+.compact .weekGrid button {
+  min-height: 6.25rem;
+  gap: var(--space-1);
+  padding-inline: var(--space-1);
+}
+
+.compact .weekGrid button > strong {
+  font-size: 1.5rem;
+}
+
+.compact .weekGrid button > small {
+  display: none;
+}
+
 @media (max-width: 48rem) {
   .toolbar {
     align-items: stretch;

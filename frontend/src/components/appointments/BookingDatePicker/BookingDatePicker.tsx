@@ -5,6 +5,7 @@ type CalendarView = 'month' | 'week'
 
 type Props = {
   availableDateIds: string[]
+  compact?: boolean
   onSelect: (dateId: string) => void
   selectedDateId: string
 }
@@ -75,6 +76,7 @@ function firstAvailableInRange(
 
 export function BookingDatePicker({
   availableDateIds,
+  compact = false,
   onSelect,
   selectedDateId,
 }: Props) {
@@ -159,7 +161,7 @@ export function BookingDatePicker({
   const canGoToNextMonth = visibleMonth.getTime() < latestMonth.getTime()
 
   return (
-    <div className={styles.picker}>
+    <div className={`${styles.picker} ${compact ? styles.compact : ''}`}>
       <div className={styles.toolbar}>
         <div className={styles.viewSwitch} aria-label="Visualização das datas">
           <button
