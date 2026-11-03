@@ -1,0 +1,454 @@
+.dashboard {
+  scroll-margin-top: 6.5rem;
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboardHeader > div:first-child > span,
+.panelHeader span {
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dashboardHeader h2 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 400;
+}
+
+.dashboardHeader p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.updateArea {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.lastUpdated,
+.periodControl > span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.periodControl {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.periodControl > span {
+  font-weight: 800;
+}
+
+.periodControl select {
+  min-height: 2.75rem;
+  padding: 0.6rem 2.25rem 0.6rem var(--space-3);
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.periodControl select:hover,
+.periodControl select:focus {
+  border-color: var(--color-primary);
+}
+
+.updateArea button,
+.errorMessage button {
+  min-height: 2.75rem;
+  padding: 0.65rem var(--space-4);
+  color: var(--color-primary);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.updateArea button:hover:not(:disabled),
+.errorMessage button:hover {
+  border-color: var(--color-primary);
+}
+
+.updateArea button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.stateMessage,
+.errorMessage,
+.refreshWarning {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.stateMessage {
+  color: var(--color-text-muted);
+  background: var(--color-surface-strong);
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  color: var(--color-error);
+  background: #fff5f5;
+  border-color: #e8b8b8;
+}
+
+.errorMessage span {
+  flex: 1;
+  min-width: 14rem;
+}
+
+.refreshWarning {
+  color: var(--color-warning);
+  background: #fffaf2;
+  border-color: #ead4b7;
+  font-size: var(--font-size-sm);
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.metricCard {
+  min-width: 0;
+  min-height: 13rem;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.metricIndex {
+  color: var(--color-blue-300);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.metricCard p {
+  margin: auto 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.metricCard strong {
+  margin-top: var(--space-2);
+  color: var(--color-navy-950);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.metricCard small {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.75fr);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.panel {
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.panelHeader h3 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+}
+
+.panelHeader > a {
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.panelHeader > a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.appointmentList {
+  display: grid;
+  gap: 0;
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appointmentList li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) minmax(8rem, auto);
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.appointmentList li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.appointmentList li:last-child {
+  padding-bottom: 0;
+}
+
+.dateBadge {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  color: var(--color-text-on-dark);
+  background: var(--color-navy-900);
+  border-radius: var(--radius-md);
+}
+
+.dateBadge span {
+  color: var(--color-blue-300);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.dateBadge strong {
+  font-size: var(--font-size-md);
+}
+
+.appointmentCopy {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.appointmentCopy strong,
+.appointmentCopy span,
+.professionalName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appointmentCopy strong {
+  color: var(--color-text);
+}
+
+.appointmentCopy span,
+.professionalName {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.professionalName {
+  text-align: right;
+}
+
+.emptyState {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-6);
+  color: var(--color-text-muted);
+  background: var(--color-ivory-50);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  line-height: 1.6;
+}
+
+.monthPanel {
+  color: var(--color-text-on-dark);
+  background: var(--color-navy-950);
+  border-color: var(--color-navy-950);
+}
+
+.monthPanel .panelHeader span {
+  color: var(--color-blue-300);
+}
+
+.monthPanel .panelHeader h3 {
+  color: var(--color-text-on-dark);
+}
+
+.statusList {
+  display: grid;
+  gap: 0;
+  margin: var(--space-6) 0 0;
+}
+
+.statusList > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.statusList dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-sm);
+}
+
+.statusList i {
+  width: 0.65rem;
+  height: 0.65rem;
+  display: block;
+  background: var(--color-blue-300);
+  border-radius: var(--radius-pill);
+}
+
+.statusList i.concluido {
+  background: #7fb393;
+}
+
+.statusList i.cancelado {
+  background: #c78189;
+}
+
+.statusList i.reagendado {
+  background: #c79b70;
+}
+
+.statusList dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.monthInsight {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+}
+
+.monthInsight span,
+.monthInsight small {
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-xs);
+}
+
+.monthInsight strong {
+  color: var(--color-text-on-dark);
+  line-height: 1.4;
+}
+
+.availabilityLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.availabilityLink:hover {
+  color: var(--color-blue-300);
+}
+
+@media (max-width: 64rem) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .dashboardHeader,
+  .panelHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .updateArea {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .updateArea button {
+    width: 100%;
+  }
+
+  .periodControl select {
+    width: 100%;
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricCard {
+    min-height: 10.5rem;
+    padding: var(--space-4);
+  }
+
+  .appointmentList li {
+    grid-template-columns: 5.75rem minmax(0, 1fr);
+  }
+
+  .professionalName {
+    grid-column: 2;
+    text-align: left;
+  }
+}
