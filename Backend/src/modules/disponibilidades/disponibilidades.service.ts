@@ -211,8 +211,10 @@ async function buscarIndisponibilidades(barbeiroId: string, inicio: Date, fim: D
 export const disponibilidadesService = {
   async listarDatasDisponiveis(barbeiroId: string, servicoId: string, limite: number) {
     if (!servicoId) throw new AppError("servicoId é obrigatório.");
-    if (!Number.isInteger(limite) || limite < 1 || limite > 31) {
-      throw new AppError("limite deve ser um número inteiro entre 1 e 31.");
+    if (!Number.isInteger(limite) || limite < 1 || limite > DIAS_MAXIMOS_DE_BUSCA) {
+      throw new AppError(
+        `limite deve ser um número inteiro entre 1 e ${DIAS_MAXIMOS_DE_BUSCA}.`
+      );
     }
 
     await buscarBarbeiro(barbeiroId, true);

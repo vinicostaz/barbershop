@@ -37,6 +37,22 @@ const emptyAvailabilityForm = {
   horaInicio: '09:00',
 }
 
+const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+
+function maskTime(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4)
+  return digits.length <= 2
+    ? digits
+    : `${digits.slice(0, 2)}:${digits.slice(2)}`
+}
+
+function maskBrazilianDate(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
 function localDateKey(date = new Date()) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -44,8 +60,30 @@ function localDateKey(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
+function formatBrazilianDate(dateKey: string) {
+  const [year, month, day] = dateKey.split('-')
+  return `${day}/${month}/${year}`
+}
+
+function parseBrazilianDate(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+  if (!match) return null
+
+  const [, day, month, year] = match
+  const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+  if (
+    parsed.getUTCFullYear() !== Number(year) ||
+    parsed.getUTCMonth() !== Number(month) - 1 ||
+    parsed.getUTCDate() !== Number(day)
+  ) {
+    return null
+  }
+
+  return `${year}-${month}-${day}`
+}
+
 function createEmptyBlockForm() {
-  const today = localDateKey()
+  const today = formatBrazilianDate(localDateKey())
   return {
     dataFim: today,
     dataInicio: today,
@@ -236,6 +274,13 @@ export function AvailabilityManager({
     if (!selectedProfessionalId) return
 
     clearFeedback()
+    if (
+      !timePattern.test(availabilityForm.horaInicio) ||
+      !timePattern.test(availabilityForm.horaFim)
+    ) {
+      setActionError('Informe os horários no formato 24 horas: HH:MM.')
+      return
+    }
     if (availabilityForm.horaInicio >= availabilityForm.horaFim) {
       setActionError('O horário final deve ser posterior ao horário inicial.')
       return
@@ -306,12 +351,27 @@ export function AvailabilityManager({
     if (!selectedProfessionalId) return
 
     clearFeedback()
+    const startDate = parseBrazilianDate(blockForm.dataInicio)
+    const endDate = parseBrazilianDate(blockForm.dataFim)
+    if (!startDate || !endDate) {
+      setActionError('Informe as datas no formato brasileiro: DD/MM/AAAA.')
+      return
+    }
+    if (
+      !blockForm.diaInteiro &&
+      (!timePattern.test(blockForm.horaInicio) ||
+        !timePattern.test(blockForm.horaFim))
+    ) {
+      setActionError('Informe os horários no formato 24 horas: HH:MM.')
+      return
+    }
+
     const inicio = blockForm.diaInteiro
-      ? blockForm.dataInicio
-      : `${blockForm.dataInicio}T${blockForm.horaInicio}`
+      ? startDate
+      : `${startDate}T${blockForm.horaInicio}`
     const fim = blockForm.diaInteiro
-      ? blockForm.dataFim
-      : `${blockForm.dataFim}T${blockForm.horaFim}`
+      ? endDate
+      : `${endDate}T${blockForm.horaFim}`
 
     if (fim < inicio || (!blockForm.diaInteiro && fim === inicio)) {
       setActionError('O fim do bloqueio deve ser posterior ao início.')
@@ -601,7 +661,11 @@ export function AvailabilityManager({
                   <p>É possível cadastrar mais de um intervalo no mesmo dia.</p>
                 </div>
 
-                <form className={styles.form} onSubmit={submitAvailability}>
+                <form
+                  className={styles.form}
+                  noValidate
+                  onSubmit={submitAvailability}
+                >
                   <SelectField
                     id="availability-weekday"
                     label="Dia da semana"
@@ -627,11 +691,16 @@ export function AvailabilityManager({
                       onChange={(event) =>
                         setAvailabilityForm({
                           ...availabilityForm,
-                          horaInicio: event.target.value,
+                          horaInicio: maskTime(event.target.value),
                         })
                       }
+                      autoComplete="off"
+                      hint="Formato 24h — ex.: 09:00"
+                      inputMode="numeric"
+                      maxLength={5}
+                      placeholder="09:00"
                       required
-                      type="time"
+                      type="text"
                       value={availabilityForm.horaInicio}
                     />
                     <TextField
@@ -640,11 +709,16 @@ export function AvailabilityManager({
                       onChange={(event) =>
                         setAvailabilityForm({
                           ...availabilityForm,
-                          horaFim: event.target.value,
+                          horaFim: maskTime(event.target.value),
                         })
                       }
+                      autoComplete="off"
+                      hint="Formato 24h — ex.: 18:00"
+                      inputMode="numeric"
+                      maxLength={5}
+                      placeholder="18:00"
                       required
-                      type="time"
+                      type="text"
                       value={availabilityForm.horaFim}
                     />
                   </div>
@@ -676,7 +750,7 @@ export function AvailabilityManager({
                   <p>Agendamentos confirmados precisam ser tratados antes do bloqueio.</p>
                 </div>
 
-                <form className={styles.form} onSubmit={submitBlock}>
+                <form className={styles.form} noValidate onSubmit={submitBlock}>
                   <label className={styles.checkboxField}>
                     <input
                       checked={blockForm.diaInteiro}
@@ -694,30 +768,44 @@ export function AvailabilityManager({
                     <TextField
                       id="block-start-date"
                       label="Data inicial"
-                      min={localDateKey()}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextStart = maskBrazilianDate(event.target.value)
+                        const nextStartKey = parseBrazilianDate(nextStart)
+                        const currentEndKey = parseBrazilianDate(blockForm.dataFim)
                         setBlockForm({
                           ...blockForm,
-                          dataInicio: event.target.value,
+                          dataInicio: nextStart,
                           dataFim:
-                            event.target.value > blockForm.dataFim
-                              ? event.target.value
+                            nextStartKey && currentEndKey && nextStartKey > currentEndKey
+                              ? nextStart
                               : blockForm.dataFim,
                         })
-                      }
+                      }}
+                      autoComplete="off"
+                      hint="DD/MM/AAAA"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="DD/MM/AAAA"
                       required
-                      type="date"
+                      type="text"
                       value={blockForm.dataInicio}
                     />
                     <TextField
                       id="block-end-date"
                       label="Data final"
-                      min={blockForm.dataInicio}
                       onChange={(event) =>
-                        setBlockForm({ ...blockForm, dataFim: event.target.value })
+                        setBlockForm({
+                          ...blockForm,
+                          dataFim: maskBrazilianDate(event.target.value),
+                        })
                       }
+                      autoComplete="off"
+                      hint="DD/MM/AAAA"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="DD/MM/AAAA"
                       required
-                      type="date"
+                      type="text"
                       value={blockForm.dataFim}
                     />
                   </div>
@@ -729,21 +817,34 @@ export function AvailabilityManager({
                         onChange={(event) =>
                           setBlockForm({
                             ...blockForm,
-                            horaInicio: event.target.value,
+                            horaInicio: maskTime(event.target.value),
                           })
                         }
+                        autoComplete="off"
+                        hint="Formato 24h — ex.: 12:00"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="12:00"
                         required
-                        type="time"
+                        type="text"
                         value={blockForm.horaInicio}
                       />
                       <TextField
                         id="block-end-time"
                         label="Horário final"
                         onChange={(event) =>
-                          setBlockForm({ ...blockForm, horaFim: event.target.value })
+                          setBlockForm({
+                            ...blockForm,
+                            horaFim: maskTime(event.target.value),
+                          })
                         }
+                        autoComplete="off"
+                        hint="Formato 24h — ex.: 14:00"
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="14:00"
                         required
-                        type="time"
+                        type="text"
                         value={blockForm.horaFim}
                       />
                     </div>

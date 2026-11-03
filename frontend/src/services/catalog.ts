@@ -94,7 +94,7 @@ export const catalogService = {
     serviceId: string,
     signal?: AbortSignal,
   ) {
-    const query = new URLSearchParams({ limite: '5', servicoId: serviceId })
+    const query = new URLSearchParams({ limite: '90', servicoId: serviceId })
 
     return apiRequest<string[]>(
       `/disponibilidades/barbeiros/${professionalId}/datas?${query}`,

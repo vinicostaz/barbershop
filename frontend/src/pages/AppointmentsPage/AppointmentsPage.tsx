@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
 import { AppointmentOption } from '../../components/appointments/AppointmentOption/AppointmentOption'
+import { BookingDatePicker } from '../../components/appointments/BookingDatePicker/BookingDatePicker'
 import { CustomerAppointments } from '../../components/appointments/CustomerAppointments/CustomerAppointments'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -246,7 +247,11 @@ function CustomerBooking({
           selectedServiceId,
           controller.signal,
         )
-        setAvailableDates(dates.map(createAvailableDate))
+        const normalizedDates = dates.map(createAvailableDate)
+        setAvailableDates(normalizedDates)
+        setSelectedDateId(normalizedDates[0]?.id ?? '')
+        setSelectedTime('')
+        setAvailableTimes([])
       } catch (requestError) {
         if (controller.signal.aborted) return
         setAvailabilityError(
@@ -350,6 +355,14 @@ function CustomerBooking({
     setSelectedProfessionalId(id)
     setAvailableDates([])
     setSelectedDateId('')
+    setSelectedTime('')
+    setAvailableTimes([])
+    setTimesError('')
+    setSubmitError('')
+  }
+
+  function selectDate(id: string) {
+    setSelectedDateId(id)
     setSelectedTime('')
     setAvailableTimes([])
     setTimesError('')
@@ -558,24 +571,12 @@ function CustomerBooking({
                 !isAvailabilityLoading &&
                 !availabilityError &&
                 availableDates.length > 0 && (
-                <div className={styles.compactGrid}>
-                  {availableDates.map((date) => (
-                    <AppointmentOption
-                      key={date.id}
-                      label={date.label}
-                      meta="Disponível"
-                      onSelect={() => {
-                        setSelectedDateId(date.id)
-                        setSelectedTime('')
-                        setAvailableTimes([])
-                        setTimesError('')
-                        setSubmitError('')
-                      }}
-                      selected={selectedDateId === date.id}
-                      visual={date.weekday}
-                    />
-                  ))}
-                </div>
+                <BookingDatePicker
+                  availableDateIds={availableDates.map((date) => date.id)}
+                  key={`${selectedProfessionalId}-${selectedServiceId}`}
+                  onSelect={selectDate}
+                  selectedDateId={selectedDateId}
+                />
               )}
 
               {currentStep === 3 && isTimesLoading && (
