@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middlewares/authMiddleware.js";
+import { authMiddleware, requireRole } from "../../middlewares/authMiddleware.js";
 import { asyncHandler } from "../../middlewares/errorHandler.js";
 import { filaDeEsperaController } from "./filaDeEspera.controller.js";
 
@@ -15,3 +15,11 @@ filaDeEsperaRoutes.post("/", asyncHandler(filaDeEsperaController.entrar));
 
 // UC10 - Confirmar horário liberado
 filaDeEsperaRoutes.post("/:id/confirmar", asyncHandler(filaDeEsperaController.confirmar));
+
+filaDeEsperaRoutes.get(
+  "/horarios-elegiveis",
+  requireRole("CLIENTE"),
+  asyncHandler(filaDeEsperaController.horariosElegiveis)
+);
+
+filaDeEsperaRoutes.delete("/:id", asyncHandler(filaDeEsperaController.desistir));
