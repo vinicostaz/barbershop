@@ -28,6 +28,10 @@ const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 })
 
+function currentMonthKey() {
+  return toMonthKey(new Date())
+}
+
 const shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: 'short',
@@ -110,6 +114,7 @@ export function AdminDashboard({ token }: { token: string }) {
   const [loadError, setLoadError] = useState('')
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -147,9 +152,8 @@ export function AdminDashboard({ token }: { token: string }) {
     const now = new Date()
     const nowTimestamp = now.getTime()
     const todayKey = toDateKey(now)
-    const monthKey = toMonthKey(now)
     const currentMonthAppointments = dashboard.appointments.filter(
-      (appointment) => appointment.horaInicio.slice(0, 7) === monthKey,
+      (appointment) => appointment.horaInicio.slice(0, 7) === selectedMonthKey,
     )
     const upcomingAppointments = dashboard.appointments
       .filter(
@@ -195,7 +199,14 @@ export function AdminDashboard({ token }: { token: string }) {
       activeProfessionals: dashboard.professionals.filter(
         (professional) => professional.ativo,
       ).length,
-      currentMonth: capitalize(monthFormatter.format(now)),
+      currentMonth: capitalize(
+        monthFormatter.format(parseDateKey(`${selectedMonthKey}-01`)),
+      ),
+      appointmentsThisMonth: currentMonthAppointments.filter(
+        (appointment) =>
+          appointment.status === 'CONFIRMADO' ||
+          appointment.status === 'CONCLUIDO',
+      ).length,
       completedThisMonth: statusCounts.CONCLUIDO,
       completedRevenue: currentMonthAppointments
         .filter((appointment) => appointment.status === 'CONCLUIDO')
@@ -216,7 +227,25 @@ export function AdminDashboard({ token }: { token: string }) {
       todayKey,
       upcomingAppointments: upcomingAppointments.length,
     }
-  }, [dashboard])
+  }, [dashboard, selectedMonthKey])
+
+  const monthOptions = useMemo(() => {
+    const availableMonths = new Set(
+      dashboard.appointments.map((appointment) =>
+        appointment.horaInicio.slice(0, 7),
+      ),
+    )
+    availableMonths.add(currentMonthKey())
+
+    return [...availableMonths]
+      .sort((first, second) => second.localeCompare(first))
+      .map((monthKey) => ({
+        label: capitalize(
+          monthFormatter.format(parseDateKey(`${monthKey}-01`)),
+        ),
+        value: monthKey,
+      }))
+  }, [dashboard.appointments])
 
   const metrics = [
     {
@@ -230,9 +259,9 @@ export function AdminDashboard({ token }: { token: string }) {
       value: summary.upcomingAppointments,
     },
     {
-      detail: `em ${summary.currentMonth}`,
-      label: 'Concluídos no mês',
-      value: summary.completedThisMonth,
+      detail: `confirmados ou concluídos em ${summary.currentMonth}`,
+      label: 'Atendimentos no mês',
+      value: summary.appointmentsThisMonth,
     },
     {
       detail: 'em atendimentos concluídos',
@@ -263,8 +292,23 @@ export function AdminDashboard({ token }: { token: string }) {
         </div>
 
         <div className={styles.updateArea}>
+          <label className={styles.periodControl}>
+            <span>Mês de referência</span>
+            <select
+              onChange={(event) => setSelectedMonthKey(event.target.value)}
+              value={selectedMonthKey}
+            >
+              {monthOptions.map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </label>
           {lastUpdatedAt && (
-            <span>Atualizado às {updateTimeFormatter.format(lastUpdatedAt)}</span>
+            <span className={styles.lastUpdated}>
+              Atualizado às {updateTimeFormatter.format(lastUpdatedAt)}
+            </span>
           )}
           <button
             disabled={isLoading}

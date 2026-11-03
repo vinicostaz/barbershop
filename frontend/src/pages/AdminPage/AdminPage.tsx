@@ -9,7 +9,7 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
 import styles from './AdminPage.module.css'
 
-type ManagementSection = 'professionals' | 'services' | 'specialties'
+type ManagementSection = 'dashboard' | 'professionals' | 'services' | 'specialties'
 
 type AdministrativeModule = {
   description: string
@@ -23,33 +23,39 @@ type AdministrativeModule = {
 
 const administrativeModules: AdministrativeModule[] = [
   {
-    description: 'Cadastro, edição, preços, duração e disponibilidade no catálogo.',
+    description: 'Indicadores, próximos atendimentos e desempenho mensal da operação.',
     number: '01',
+    section: 'dashboard',
+    title: 'Dashboard',
+  },
+  {
+    description: 'Cadastro, edição, preços, duração e disponibilidade no catálogo.',
+    number: '02',
     section: 'services',
     title: 'Serviços',
   },
   {
     description: 'Cadastro de profissionais e organização dos dados da equipe.',
-    number: '02',
+    number: '03',
     section: 'professionals',
     title: 'Profissionais',
   },
   {
     description: 'Organização das especialidades oferecidas pelos profissionais.',
-    number: '03',
+    number: '04',
     section: 'specialties',
     title: 'Especialidades',
   },
   {
     description: 'Consulta dos horários e acompanhamento dos atendimentos.',
-    number: '04',
+    number: '05',
     status: 'Disponível',
     title: 'Agendamentos',
     to: '/profissional',
   },
   {
     description: 'Horários semanais, folgas, pausas e períodos indisponíveis.',
-    number: '05',
+    number: '06',
     pageSection: 'availability',
     status: 'Disponível',
     title: 'Disponibilidade',
@@ -59,7 +65,7 @@ const administrativeModules: AdministrativeModule[] = [
 
 export function AdminPage() {
   const { session } = useAuth()
-  const [activeSection, setActiveSection] = useState<ManagementSection>('services')
+  const [activeSection, setActiveSection] = useState<ManagementSection>('dashboard')
 
   function selectSection(section: ManagementSection) {
     setActiveSection(section)
@@ -94,8 +100,6 @@ export function AdminPage() {
             <p>Visão consolidada da agenda, do catálogo e da equipe.</p>
           </aside>
         </header>
-
-        {session && <AdminDashboard token={session.token} />}
 
         <div className={styles.sectionHeading} id="admin-modules">
           <div>
@@ -168,6 +172,9 @@ export function AdminPage() {
 
         {session && (
           <section className={styles.management} id="admin-management">
+            {activeSection === 'dashboard' && (
+              <AdminDashboard token={session.token} />
+            )}
             {activeSection === 'services' && <ServicesManager token={session.token} />}
             {activeSection === 'professionals' && (
               <ProfessionalsManager token={session.token} />

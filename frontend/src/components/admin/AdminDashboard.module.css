@@ -1,5 +1,5 @@
 .dashboard {
-  margin-top: clamp(var(--space-12), 7vw, var(--space-16));
+  scroll-margin-top: 6.5rem;
 }
 
 .dashboardHeader {
@@ -42,9 +42,34 @@
   justify-content: flex-end;
 }
 
-.updateArea > span {
+.lastUpdated,
+.periodControl > span {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+}
+
+.periodControl {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.periodControl > span {
+  font-weight: 800;
+}
+
+.periodControl select {
+  min-height: 2.75rem;
+  padding: 0.6rem 2.25rem 0.6rem var(--space-3);
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.periodControl select:hover,
+.periodControl select:focus {
+  border-color: var(--color-primary);
 }
 
 .updateArea button,
@@ -402,6 +427,10 @@
   }
 
   .updateArea button {
+    width: 100%;
+  }
+
+  .periodControl select {
     width: 100%;
   }
 
