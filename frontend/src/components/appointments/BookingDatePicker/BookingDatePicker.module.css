@@ -1,0 +1,256 @@
+.picker {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.toolbar > p,
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.toolbar > p {
+  text-align: right;
+}
+
+.viewSwitch {
+  display: flex;
+  padding: var(--space-1);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.viewSwitch button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.9rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.viewSwitch button:hover,
+.viewSwitch .activeView {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.calendarPanel {
+  overflow: hidden;
+  background: var(--color-ivory-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.periodNavigation {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-strong);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.periodNavigation strong {
+  color: var(--color-text);
+  text-align: center;
+}
+
+.periodNavigation button {
+  min-height: 2.5rem;
+  color: var(--color-primary);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.periodNavigation button:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekGrid button {
+  min-width: 0;
+  min-height: 8.5rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  font: inherit;
+  cursor: pointer;
+}
+
+.weekGrid button:last-child {
+  border-right: 0;
+}
+
+.weekGrid button > span,
+.weekdayLabel {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.weekGrid button > strong {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+}
+
+.weekGrid button > small {
+  color: var(--color-success);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.weekGrid button:disabled {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.weekGrid button:disabled > small {
+  color: var(--color-text-muted);
+}
+
+.weekGrid button:not(:disabled):hover,
+.weekGrid .selectedDay,
+.monthGrid button:not(:disabled):hover,
+.monthGrid .selectedDay {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.weekGrid .selectedDay span,
+.weekGrid .selectedDay small {
+  color: var(--color-white);
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(2.5rem, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.weekdayLabel {
+  padding-block: var(--space-2);
+  text-align: center;
+}
+
+.monthGrid button {
+  min-height: 3rem;
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.monthGrid button:disabled {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: transparent;
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.hint {
+  line-height: 1.5;
+}
+
+.compact .toolbar {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.compact .toolbar > p {
+  text-align: left;
+}
+
+.compact .weekGrid button {
+  min-height: 6.25rem;
+  gap: var(--space-1);
+  padding-inline: var(--space-1);
+}
+
+.compact .weekGrid button > strong {
+  font-size: 1.5rem;
+}
+
+.compact .weekGrid button > small {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar > p {
+    text-align: left;
+  }
+
+  .weekGrid {
+    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(5.25rem, 1fr));
+  }
+
+  .weekGrid button {
+    min-height: 7.25rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .viewSwitch,
+  .viewSwitch button {
+    width: 100%;
+  }
+
+  .viewSwitch button {
+    flex: 1;
+  }
+
+  .monthGrid {
+    gap: var(--space-1);
+    padding: var(--space-3);
+  }
+
+  .monthGrid button {
+    min-height: 2.5rem;
+  }
+}

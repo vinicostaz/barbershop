@@ -8,6 +8,7 @@ import {
 } from '../../../services/appointments'
 import { ApiError } from '../../../services/api'
 import { catalogService } from '../../../services/catalog'
+import { BookingDatePicker } from '../BookingDatePicker/BookingDatePicker'
 import styles from './CustomerAppointments.module.css'
 
 type CustomerAppointmentsProps = {
@@ -19,22 +20,11 @@ type CustomerAppointmentsProps = {
   token: string
 }
 
-type AvailableDate = {
-  id: string
-  label: string
-  weekday: string
-}
-
 type ViewMode = 'history' | 'upcoming'
 
 const fullDateFormatter = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'long',
   timeZone: 'UTC',
-})
-
-const shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: 'short',
 })
 
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -43,26 +33,11 @@ const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'UTC',
 })
 
-const weekdayFormatter = new Intl.DateTimeFormat('pt-BR', {
-  weekday: 'short',
-})
-
 const statusLabels: Record<Appointment['status'], string> = {
   CANCELADO: 'Cancelado',
   CONCLUIDO: 'Concluído',
   CONFIRMADO: 'Confirmado',
   REAGENDADO: 'Reagendado',
-}
-
-function createAvailableDate(id: string): AvailableDate {
-  const [year, month, day] = id.split('-').map(Number)
-  const date = new Date(year, month - 1, day, 12)
-
-  return {
-    id,
-    label: shortDateFormatter.format(date).replace('.', ''),
-    weekday: weekdayFormatter.format(date).replace('.', ''),
-  }
 }
 
 function getAppointmentWallClockTimestamp(value: string) {
@@ -95,7 +70,7 @@ function RescheduleForm({
   onSuccess: () => void
   token: string
 }) {
-  const [availableDates, setAvailableDates] = useState<AvailableDate[]>([])
+  const [availableDates, setAvailableDates] = useState<string[]>([])
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
   const [selectedDateId, setSelectedDateId] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
@@ -126,7 +101,8 @@ function RescheduleForm({
           appointment.servico.id,
           controller.signal,
         )
-        setAvailableDates(dates.map(createAvailableDate))
+        setAvailableDates(dates)
+        setSelectedDateId(dates[0] ?? '')
       } catch (requestError) {
         if (controller.signal.aborted) return
         setDatesError(
@@ -227,6 +203,14 @@ function RescheduleForm({
     }
   }
 
+  function selectDate(dateId: string) {
+    setSelectedDateId(dateId)
+    setSelectedTime('')
+    setAvailableTimes([])
+    setTimesError('')
+    setSubmitError('')
+  }
+
   return (
     <form
       className={styles.rescheduleForm}
@@ -259,26 +243,12 @@ function RescheduleForm({
       {!isDatesLoading && !datesError && availableDates.length > 0 && (
         <fieldset>
           <legend>Nova data</legend>
-          <div className={styles.dateOptions}>
-            {availableDates.map((date) => (
-              <button
-                aria-pressed={selectedDateId === date.id}
-                className={selectedDateId === date.id ? styles.selectedOption : ''}
-                key={date.id}
-                onClick={() => {
-                  setSelectedDateId(date.id)
-                  setSelectedTime('')
-                  setAvailableTimes([])
-                  setTimesError('')
-                  setSubmitError('')
-                }}
-                type="button"
-              >
-                <span>{date.weekday}</span>
-                <strong>{date.label}</strong>
-              </button>
-            ))}
-          </div>
+          <BookingDatePicker
+            availableDateIds={availableDates}
+            compact
+            onSelect={selectDate}
+            selectedDateId={selectedDateId}
+          />
         </fieldset>
       )}
 
