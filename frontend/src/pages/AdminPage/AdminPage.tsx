@@ -8,7 +8,19 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
 import styles from './AdminPage.module.css'
 
-const administrativeModules = [
+type ManagementSection = 'professionals' | 'services' | 'specialties'
+
+type AdministrativeModule = {
+  description: string
+  number: string
+  pageSection?: 'agenda' | 'availability'
+  section?: ManagementSection
+  status?: string
+  title: string
+  to?: string
+}
+
+const administrativeModules: AdministrativeModule[] = [
   {
     description: 'Cadastro, edição, preços, duração e disponibilidade no catálogo.',
     number: '01',
@@ -34,9 +46,15 @@ const administrativeModules = [
     title: 'Agendamentos',
     to: '/profissional',
   },
+  {
+    description: 'Horários semanais, folgas, pausas e períodos indisponíveis.',
+    number: '05',
+    pageSection: 'availability',
+    status: 'Disponível',
+    title: 'Disponibilidade',
+    to: '/profissional',
+  },
 ]
-
-type ManagementSection = 'professionals' | 'services' | 'specialties'
 
 export function AdminPage() {
   const { session } = useAuth()
@@ -86,7 +104,15 @@ export function AdminPage() {
 
         <div className={styles.moduleGrid}>
           {administrativeModules.map(
-            ({ description, number, section, status = 'Gerenciar', title, to }) => {
+            ({
+              description,
+              number,
+              pageSection = 'agenda',
+              section,
+              status = 'Gerenciar',
+              title,
+              to,
+            }) => {
               const content = (
                 <>
                   <span className={styles.moduleNumber} aria-hidden="true">
@@ -111,7 +137,7 @@ export function AdminPage() {
                   <Link
                     className={styles.moduleCard}
                     key={title}
-                    state={{ fromAdmin: true }}
+                    state={{ fromAdmin: true, section: pageSection }}
                     to={to}
                   >
                     {content}

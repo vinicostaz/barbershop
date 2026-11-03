@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { AvailabilityManager } from '../../components/schedule/AvailabilityManager/AvailabilityManager'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
 import { Container } from '../../components/ui/Container/Container'
@@ -11,6 +12,7 @@ import {
 import styles from './SchedulePage.module.css'
 
 type ViewMode = 'month' | 'week'
+type PageSection = 'agenda' | 'availability'
 
 const shortDayFormatter = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -143,6 +145,9 @@ function ScheduleCard({
 export function SchedulePage() {
   const location = useLocation()
   const { session } = useAuth()
+  const [pageSection, setPageSection] = useState<PageSection>(() =>
+    location.state?.section === 'availability' ? 'availability' : 'agenda',
+  )
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('month')
   const [selectedDate, setSelectedDate] = useState(startOfToday)
@@ -288,30 +293,69 @@ export function SchedulePage() {
         <header className={styles.hero}>
           <div>
             <Badge tone="brown">
-              {isAdministrator ? 'Agenda administrativa' : 'Área profissional'}
+              {pageSection === 'availability'
+                ? 'Gestão de disponibilidade'
+                : isAdministrator
+                  ? 'Agenda administrativa'
+                  : 'Área profissional'}
             </Badge>
             <h1 id="schedule-title">
-              {isAdministrator ? 'Agenda da equipe' : 'Minha agenda'}
+              {pageSection === 'availability'
+                ? isAdministrator
+                  ? 'Disponibilidade da equipe'
+                  : 'Minha disponibilidade'
+                : isAdministrator
+                  ? 'Agenda da equipe'
+                  : 'Minha agenda'}
             </h1>
             <p>
-              {isAdministrator
-                ? 'Acompanhe os atendimentos de todos os profissionais em um só lugar.'
-                : 'Consulte seus próximos atendimentos e organize sua rotina de trabalho.'}
+              {pageSection === 'availability'
+                ? isAdministrator
+                  ? 'Configure os horários de trabalho e os períodos indisponíveis de cada profissional.'
+                  : 'Configure seus horários de trabalho, folgas, pausas e compromissos.'
+                : isAdministrator
+                  ? 'Acompanhe os atendimentos de todos os profissionais em um só lugar.'
+                  : 'Consulte seus próximos atendimentos e organize sua rotina de trabalho.'}
             </p>
           </div>
 
-          <div className={styles.periodSummary} aria-label="Resumo do período">
-            <span>{capitalize(monthFormatter.format(selectedDate))}</span>
-            <strong>{filteredAppointments.length}</strong>
-            <p>
-              {filteredAppointments.length === 1
-                ? 'atendimento no período'
-                : 'atendimentos no período'}
-            </p>
-          </div>
+          {pageSection === 'agenda' && (
+            <div className={styles.periodSummary} aria-label="Resumo do período">
+              <span>{capitalize(monthFormatter.format(selectedDate))}</span>
+              <strong>{filteredAppointments.length}</strong>
+              <p>
+                {filteredAppointments.length === 1
+                  ? 'atendimento no período'
+                  : 'atendimentos no período'}
+              </p>
+            </div>
+          )}
         </header>
 
-        <div className={styles.toolbar}>
+        <div className={styles.pageSectionSwitch} aria-label="Área profissional">
+          <button
+            aria-pressed={pageSection === 'agenda'}
+            className={pageSection === 'agenda' ? styles.activePageSection : ''}
+            onClick={() => setPageSection('agenda')}
+            type="button"
+          >
+            Agenda
+          </button>
+          <button
+            aria-pressed={pageSection === 'availability'}
+            className={
+              pageSection === 'availability' ? styles.activePageSection : ''
+            }
+            onClick={() => setPageSection('availability')}
+            type="button"
+          >
+            Disponibilidade e bloqueios
+          </button>
+        </div>
+
+        {pageSection === 'agenda' ? (
+          <>
+            <div className={styles.toolbar}>
           <div className={styles.viewSwitch} aria-label="Formato da agenda">
             <button
               aria-pressed={viewMode === 'month'}
@@ -412,7 +456,7 @@ export function SchedulePage() {
           </div>
         )}
 
-        {!isLoading && !loadError && (
+            {!isLoading && !loadError && (
           <div
             className={`${styles.scheduleWorkspace} ${viewMode === 'week' ? styles.weekWorkspace : ''}`}
           >
@@ -536,6 +580,16 @@ export function SchedulePage() {
               </div>
             </section>
           </div>
+            )}
+          </>
+        ) : (
+          session && (
+            <AvailabilityManager
+              currentUserId={session.usuario.id}
+              isAdministrator={isAdministrator}
+              token={session.token}
+            />
+          )
         )}
       </Container>
     </section>
