@@ -30,6 +30,15 @@ export const disponibilidadesRepository = {
     });
   },
 
+  // agendamentos confirmados que ainda não terminaram (o histórico não importa
+  // para saber se uma mudança de expediente deixa alguém de fora)
+  findAgendamentosConfirmadosFuturos(barbeiroId: string, agora: Date) {
+    return db.agendamento.findMany({
+      where: { barbeiroId, status: "CONFIRMADO", horaFim: { gt: agora } },
+      select: { horaInicio: true, horaFim: true },
+    });
+  },
+
   create(data: { barbeiroId: string; diaSemana: number; horaInicio: string; horaFim: string }) {
     return db.disponibilidade.create({ data });
   },
