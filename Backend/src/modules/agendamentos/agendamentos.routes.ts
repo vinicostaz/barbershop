@@ -18,3 +18,6 @@ agendamentosRoutes.patch("/:id/reagendar", asyncHandler(agendamentosController.r
 
 // UC07 - Cancelar agendamento
 agendamentosRoutes.patch("/:id/cancelar", asyncHandler(agendamentosController.cancelar));
+
+// Concluir atendimento (barbeiro do atendimento ou administrador) + 1 ponto de fidelidade
+agendamentosRoutes.patch("/:id/concluir", asyncHandler(agendamentosController.concluir));

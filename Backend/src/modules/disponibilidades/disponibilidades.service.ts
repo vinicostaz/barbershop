@@ -90,6 +90,54 @@ export function gerarHorariosLivres(
   return [...horarios].sort();
 }
 
+// O agendamento cabe inteiro no bloco? (mesma regra do gerarHorariosLivres:
+// o atendimento precisa caber num único bloco de expediente)
+function agendamentoCabeNoBloco(agendamento: IntervaloIndisponivel, bloco: DisponibilidadeInput) {
+  const inicio = agendamento.horaInicio;
+  const fim = agendamento.horaFim;
+  if (inicio.getUTCDay() !== bloco.diaSemana) return false;
+  if (inicio.toISOString().slice(0, 10) !== fim.toISOString().slice(0, 10)) return false;
+
+  const inicioMin = inicio.getUTCHours() * 60 + inicio.getUTCMinutes();
+  const fimMin = fim.getUTCHours() * 60 + fim.getUTCMinutes();
+  return inicioMin >= horaParaMinutos(bloco.horaInicio) && fimMin <= horaParaMinutos(bloco.horaFim);
+}
+
+// "Agendamentos fantasmas": quantos agendamentos estavam dentro do bloco que vai
+// mudar/sumir e deixariam de caber no expediente depois da mudança.
+// blocosDepois = como a agenda do barbeiro fica após a alteração.
+export function contarAgendamentosForaDoExpediente(
+  agendamentos: IntervaloIndisponivel[],
+  blocoAntes: DisponibilidadeInput,
+  blocosDepois: DisponibilidadeInput[]
+) {
+  return agendamentos.filter(
+    (agendamento) =>
+      agendamentoCabeNoBloco(agendamento, blocoAntes) &&
+      !blocosDepois.some((bloco) => agendamentoCabeNoBloco(agendamento, bloco))
+  ).length;
+}
+
+async function garantirSemAgendamentosAfetados(
+  barbeiroId: string,
+  blocoAntes: DisponibilidadeInput,
+  blocosDepois: DisponibilidadeInput[],
+  acao: string
+) {
+  const agendamentos = await disponibilidadesRepository.findAgendamentosConfirmadosFuturos(
+    barbeiroId,
+    agoraComoHoraDeParede()
+  );
+  const afetados = contarAgendamentosForaDoExpediente(agendamentos, blocoAntes, blocosDepois);
+  if (afetados > 0) {
+    throw new AppError(
+      `Não é possível ${acao}: ${afetados} agendamento(s) confirmado(s) ficariam fora do expediente. Cancele ou reagende antes.`,
+      409,
+      { agendamentosAfetados: afetados }
+    );
+  }
+}
+
 function validar(input: Partial<DisponibilidadeInput>, completa = false) {
   if (completa) {
     if (!Number.isInteger(input.diaSemana)) {
@@ -259,6 +307,16 @@ export const disponibilidadesService = {
     if (sobreposta) {
       throw new AppError("Já existe uma disponibilidade que se sobrepõe a esse período.", 409);
     }
+
+    const outrosBlocos = (await disponibilidadesRepository.findByBarbeiro(atual.barbeiroId)).filter(
+      (bloco) => bloco.id !== id
+    );
+    await garantirSemAgendamentosAfetados(
+      atual.barbeiroId,
+      atual,
+      [...outrosBlocos, dados],
+      "alterar essa disponibilidade"
+    );
     return disponibilidadesRepository.update(id, dados);
   },
 
@@ -266,6 +324,16 @@ export const disponibilidadesService = {
     const disponibilidade = await disponibilidadesRepository.findById(id);
     if (!disponibilidade) throw new AppError("Disponibilidade não encontrada.", 404);
     garantirPermissao(usuarioLogado, disponibilidade.barbeiroId);
+
+    const outrosBlocos = (
+      await disponibilidadesRepository.findByBarbeiro(disponibilidade.barbeiroId)
+    ).filter((bloco) => bloco.id !== id);
+    await garantirSemAgendamentosAfetados(
+      disponibilidade.barbeiroId,
+      disponibilidade,
+      outrosBlocos,
+      "remover essa disponibilidade"
+    );
     return disponibilidadesRepository.delete(id);
   },
 };

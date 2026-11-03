@@ -148,6 +148,26 @@ export const agendamentosRepository = {
     });
   },
 
+  // Marca como CONCLUIDO e soma os pontos do cliente na MESMA transação.
+  // O update só acontece se o agendamento ainda estiver CONFIRMADO: se duas
+  // requisições chegarem juntas, só a primeira conclui e o ponto não é dado em dobro.
+  // Retorna null quando o agendamento já tinha mudado de status.
+  concluir(id: string, clienteId: string, pontos: number) {
+    return db.$transaction(async (tx) => {
+      const { count } = await tx.agendamento.updateMany({
+        where: { id, status: "CONFIRMADO" },
+        data: { status: "CONCLUIDO" },
+      });
+      if (count === 0) return null;
+
+      await tx.usuario.update({
+        where: { id: clienteId },
+        data: { pontosFidelidade: { increment: pontos } },
+      });
+      return tx.agendamento.findUnique({ where: { id }, include: includeCompleto });
+    });
+  },
+
   updateStatus(id: string, status: "CONFIRMADO" | "CANCELADO" | "CONCLUIDO" | "REAGENDADO") {
     return db.agendamento.update({ where: { id }, data: { status } });
   },

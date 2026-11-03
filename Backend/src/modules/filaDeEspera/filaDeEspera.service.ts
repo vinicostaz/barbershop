@@ -11,6 +11,7 @@ import { agoraComoHoraDeParede } from "../agendamentos/agendamentos.tempo.js";
 import { formatarHora } from "../agendamentos/agendamentos.utils.js";
 import { servicosRepository } from "../servicos/servicos.repository.js";
 import { filaDeEsperaRepository } from "./filaDeEspera.repository.js";
+import { criarEntradaSeNaoDuplicada } from "./filaDeEspera.cliente.repository.js";
 
 // Quanto tempo o cliente avisado tem de prioridade para confirmar a vaga.
 // Para testar a expiração, coloque FILA_PRIORIDADE_MIN=1 no .env.
@@ -79,22 +80,17 @@ export const filaDeEsperaService = {
       throw new AppError("Você já possui um agendamento neste horário.", 400);
     }
 
-    const duplicada = await filaDeEsperaRepository.findDuplicada(
-      usuarioLogado.sub,
-      input.barbeiroId,
-      horaInicio
-    );
-    if (duplicada) {
-      throw new AppError("Você já está na fila de espera para este horário.", 409);
-    }
-
-    return filaDeEsperaRepository.create({
+    const entrada = await criarEntradaSeNaoDuplicada({
       clienteId: usuarioLogado.sub,
       barbeiroId: input.barbeiroId,
       servicoId: input.servicoId,
       horaInicio,
       horaFim,
     });
+    if (!entrada) {
+      throw new AppError("Você já está na fila de espera para este horário.", 409);
+    }
+    return entrada;
   },
 
   // UC10 - Confirmar horário liberado
