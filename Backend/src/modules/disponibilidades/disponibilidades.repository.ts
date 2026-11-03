@@ -43,6 +43,13 @@ export const disponibilidadesRepository = {
     return db.disponibilidade.create({ data });
   },
 
+  // cria vários de uma vez, numa única transação (ou todos, ou nenhum)
+  createVarios(
+    data: { barbeiroId: string; diaSemana: number; horaInicio: string; horaFim: string }[]
+  ) {
+    return db.$transaction(data.map((item) => db.disponibilidade.create({ data: item })));
+  },
+
   update(id: string, data: Partial<{ diaSemana: number; horaInicio: string; horaFim: string }>) {
     return db.disponibilidade.update({ where: { id }, data });
   },
