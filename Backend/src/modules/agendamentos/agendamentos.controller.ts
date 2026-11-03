@@ -31,6 +31,12 @@ export const agendamentosController = {
     return res.json(agendamento);
   },
 
+  async concluir(req: Request<{ id: string }>, res: Response) {
+    if (!req.user) throw new AppError("Não autenticado.", 401);
+    const agendamento = await agendamentosService.concluir(req.user, req.params.id);
+    return res.json(agendamento);
+  },
+
   async listar(req: Request, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
     const agendamentos = await agendamentosService.listarParaUsuarioLogado(req.user);
