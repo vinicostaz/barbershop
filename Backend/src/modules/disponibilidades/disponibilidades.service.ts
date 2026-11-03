@@ -138,6 +138,20 @@ async function garantirSemAgendamentosAfetados(
   }
 }
 
+const NOMES_DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+// diasSemana precisa ser uma lista não vazia de números de 0 (domingo) a 6 (sábado).
+// Dias repetidos são ignorados e o resultado sai em ordem.
+export function normalizarDiasSemana(diasSemana: unknown): number[] {
+  if (!Array.isArray(diasSemana) || diasSemana.length === 0) {
+    throw new AppError("diasSemana deve ser uma lista com pelo menos um dia (0 a 6).");
+  }
+  if (!diasSemana.every((dia) => Number.isInteger(dia) && dia >= 0 && dia <= 6)) {
+    throw new AppError("diasSemana deve conter apenas números entre 0 (domingo) e 6 (sábado).");
+  }
+  return [...new Set(diasSemana as number[])].sort((a, b) => a - b);
+}
+
 function validar(input: Partial<DisponibilidadeInput>, completa = false) {
   if (completa) {
     if (!Number.isInteger(input.diaSemana)) {
@@ -281,6 +295,49 @@ export const disponibilidadesService = {
       throw new AppError("Já existe uma disponibilidade que se sobrepõe a esse período.", 409);
     }
     return disponibilidadesRepository.create({ barbeiroId, ...input });
+  },
+
+  // Mesmo horário em vários dias da semana de uma vez (ex.: seg a sáb, 09:00-18:00).
+  // Tudo ou nada: se algum dia tiver conflito, nenhum é criado.
+  async criarVariosDias(
+    usuarioLogado: AuthPayload,
+    barbeiroId: string,
+    input: { diasSemana: unknown; horaInicio: string; horaFim: string }
+  ) {
+    garantirPermissao(usuarioLogado, barbeiroId);
+    const diasSemana = normalizarDiasSemana(input.diasSemana);
+    for (const diaSemana of diasSemana) {
+      validar({ diaSemana, horaInicio: input.horaInicio, horaFim: input.horaFim }, true);
+    }
+    await buscarBarbeiro(barbeiroId, false);
+
+    const diasEmConflito: number[] = [];
+    for (const diaSemana of diasSemana) {
+      const sobreposta = await disponibilidadesRepository.findSobreposta(
+        barbeiroId,
+        diaSemana,
+        input.horaInicio,
+        input.horaFim
+      );
+      if (sobreposta) diasEmConflito.push(diaSemana);
+    }
+    if (diasEmConflito.length > 0) {
+      const nomes = diasEmConflito.map((dia) => NOMES_DIAS[dia]).join(", ");
+      throw new AppError(
+        `Já existe disponibilidade que se sobrepõe a esse horário em: ${nomes}. Nenhum dia foi salvo.`,
+        409,
+        { diasEmConflito }
+      );
+    }
+
+    return disponibilidadesRepository.createVarios(
+      diasSemana.map((diaSemana) => ({
+        barbeiroId,
+        diaSemana,
+        horaInicio: input.horaInicio,
+        horaFim: input.horaFim,
+      }))
+    );
   },
 
   async atualizar(

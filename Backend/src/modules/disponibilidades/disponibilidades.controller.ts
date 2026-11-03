@@ -39,7 +39,22 @@ export const disponibilidadesController = {
 
   async criar(req: Request<{ barbeiroId: string }>, res: Response) {
     if (!req.user) throw new AppError("Não autenticado.", 401);
-    const { diaSemana, horaInicio, horaFim } = req.body;
+    const { diaSemana, diasSemana, horaInicio, horaFim } = req.body;
+
+    // vários dias de uma vez: { diasSemana: [1,2,3], horaInicio, horaFim } => lista criada
+    if (diasSemana !== undefined) {
+      if (diaSemana !== undefined) {
+        throw new AppError("Envie diaSemana (um dia) ou diasSemana (vários dias), não os dois.");
+      }
+      const criadas = await disponibilidadesService.criarVariosDias(
+        req.user,
+        req.params.barbeiroId,
+        { diasSemana, horaInicio, horaFim }
+      );
+      return res.status(201).json(criadas);
+    }
+
+    // um dia só (formato original): { diaSemana: 1, horaInicio, horaFim } => objeto criado
     const disponibilidade = await disponibilidadesService.criar(
       req.user,
       req.params.barbeiroId,
