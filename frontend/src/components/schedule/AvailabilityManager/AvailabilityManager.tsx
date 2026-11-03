@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { adminService, type AdminProfessional } from '../../../services/admin'
 import {
   availabilityService,
@@ -80,6 +80,91 @@ function parseBrazilianDate(value: string) {
   }
 
   return `${year}-${month}-${day}`
+}
+
+type BrazilianDateFieldProps = {
+  id: string
+  label: string
+  min: string
+  onChange: (value: string) => void
+  value: string
+}
+
+function BrazilianDateField({
+  id,
+  label,
+  min,
+  onChange,
+  value,
+}: BrazilianDateFieldProps) {
+  const pickerRef = useRef<HTMLInputElement>(null)
+  const pickerValue = parseBrazilianDate(value) ?? ''
+
+  function openPicker() {
+    const picker = pickerRef.current
+    if (!picker) return
+
+    const pickerWithOptionalShow = picker as HTMLInputElement & {
+      showPicker?: () => void
+    }
+    if (typeof pickerWithOptionalShow.showPicker === 'function') {
+      pickerWithOptionalShow.showPicker()
+      return
+    }
+
+    picker.click()
+  }
+
+  return (
+    <label className={styles.localizedDateField} htmlFor={id}>
+      <span>
+        {label}
+        <span aria-hidden="true" className={styles.requiredIndicator}>
+          {' '}*
+        </span>
+      </span>
+      <span className={styles.localizedDateControl}>
+        <input
+          autoComplete="off"
+          id={id}
+          inputMode="numeric"
+          maxLength={10}
+          onChange={(event) => onChange(maskBrazilianDate(event.target.value))}
+          placeholder="DD/MM/AAAA"
+          required
+          type="text"
+          value={value}
+        />
+        <button
+          aria-label={`Abrir calendário para ${label.toLocaleLowerCase('pt-BR')}`}
+          onClick={openPicker}
+          type="button"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+          </svg>
+        </button>
+        <input
+          aria-hidden="true"
+          className={styles.nativeDatePicker}
+          lang="pt-BR"
+          min={min}
+          onChange={(event) =>
+            onChange(
+              event.target.value
+                ? formatBrazilianDate(event.target.value)
+                : '',
+            )
+          }
+          ref={pickerRef}
+          tabIndex={-1}
+          type="date"
+          value={pickerValue}
+        />
+      </span>
+      <small>DD/MM/AAAA</small>
+    </label>
+  )
 }
 
 function createEmptyBlockForm() {
@@ -765,47 +850,39 @@ export function AvailabilityManager({
                     <span>Bloquear dia inteiro</span>
                   </label>
                   <div className={styles.formRow}>
-                    <TextField
+                    <BrazilianDateField
                       id="block-start-date"
                       label="Data inicial"
-                      onChange={(event) => {
-                        const nextStart = maskBrazilianDate(event.target.value)
+                      min={localDateKey()}
+                      onChange={(nextStart) => {
                         const nextStartKey = parseBrazilianDate(nextStart)
                         const currentEndKey = parseBrazilianDate(blockForm.dataFim)
                         setBlockForm({
                           ...blockForm,
                           dataInicio: nextStart,
                           dataFim:
-                            nextStartKey && currentEndKey && nextStartKey > currentEndKey
+                            nextStartKey &&
+                            currentEndKey &&
+                            nextStartKey > currentEndKey
                               ? nextStart
                               : blockForm.dataFim,
                         })
                       }}
-                      autoComplete="off"
-                      hint="DD/MM/AAAA"
-                      inputMode="numeric"
-                      maxLength={10}
-                      placeholder="DD/MM/AAAA"
-                      required
-                      type="text"
                       value={blockForm.dataInicio}
                     />
-                    <TextField
+                    <BrazilianDateField
                       id="block-end-date"
                       label="Data final"
-                      onChange={(event) =>
+                      min={
+                        parseBrazilianDate(blockForm.dataInicio) ??
+                        localDateKey()
+                      }
+                      onChange={(dataFim) =>
                         setBlockForm({
                           ...blockForm,
-                          dataFim: maskBrazilianDate(event.target.value),
+                          dataFim,
                         })
                       }
-                      autoComplete="off"
-                      hint="DD/MM/AAAA"
-                      inputMode="numeric"
-                      maxLength={10}
-                      placeholder="DD/MM/AAAA"
-                      required
-                      type="text"
                       value={blockForm.dataFim}
                     />
                   </div>
