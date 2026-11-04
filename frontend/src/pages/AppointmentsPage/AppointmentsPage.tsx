@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { AppointmentOption } from '../../components/appointments/AppointmentOption/AppointmentOption'
 import { BookingDatePicker } from '../../components/appointments/BookingDatePicker/BookingDatePicker'
 import { CustomerAppointments } from '../../components/appointments/CustomerAppointments/CustomerAppointments'
+import { CustomerWaitlist } from '../../components/appointments/CustomerWaitlist/CustomerWaitlist'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
 import { Container } from '../../components/ui/Container/Container'
@@ -22,7 +23,7 @@ import styles from './AppointmentsPage.module.css'
 
 const steps = ['Serviço', 'Profissional', 'Data', 'Horário', 'Revisão']
 
-type CustomerPageView = 'appointments' | 'booking'
+type CustomerPageView = 'appointments' | 'booking' | 'waitlist'
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
@@ -699,6 +700,7 @@ export function AppointmentsPage() {
     useState(0)
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState('')
   const [customerNotice, setCustomerNotice] = useState('')
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [customerView, setCustomerView] =
     useState<CustomerPageView>('appointments')
   const customerWorkspaceRef = useRef<HTMLDivElement>(null)
@@ -727,7 +729,7 @@ export function AppointmentsPage() {
   function showCustomerView(view: CustomerPageView) {
     initialCustomerViewResolvedRef.current = true
 
-    if (view === 'appointments' && hasBookingPreset) {
+    if (view !== 'booking' && hasBookingPreset) {
       const nextSearchParams = new URLSearchParams(searchParams)
       nextSearchParams.delete('servico')
       nextSearchParams.delete('profissional')
@@ -753,6 +755,14 @@ export function AppointmentsPage() {
     setCustomerAppointmentsReloadKey((key) => key + 1)
     setHighlightedAppointmentId(appointmentId)
     setCustomerNotice('Agendamento criado com sucesso.')
+    setCustomerView('appointments')
+    scrollToCustomerWorkspace()
+  }
+
+  function handleWaitlistAppointmentConfirmed(appointmentId: string) {
+    setCustomerAppointmentsReloadKey((key) => key + 1)
+    setHighlightedAppointmentId(appointmentId)
+    setCustomerNotice('Horário da fila confirmado com sucesso.')
     setCustomerView('appointments')
     scrollToCustomerWorkspace()
   }
@@ -809,6 +819,29 @@ export function AppointmentsPage() {
                 >
                   Novo agendamento
                 </button>
+                <button
+                  aria-controls="painel-agendamentos-cliente"
+                  aria-selected={activeCustomerView === 'waitlist'}
+                  className={
+                    activeCustomerView === 'waitlist'
+                      ? styles.activeViewTab
+                      : ''
+                  }
+                  id="aba-fila-espera"
+                  onClick={() => showCustomerView('waitlist')}
+                  role="tab"
+                  type="button"
+                >
+                  Fila e avisos
+                  {unreadNotificationCount > 0 && (
+                    <span
+                      aria-label={`${unreadNotificationCount} avisos não lidos`}
+                      className={styles.tabCounter}
+                    >
+                      {unreadNotificationCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </Container>
           </section>
@@ -817,7 +850,9 @@ export function AppointmentsPage() {
             aria-labelledby={
               activeCustomerView === 'appointments'
                 ? 'aba-meus-agendamentos'
-                : 'aba-novo-agendamento'
+                : activeCustomerView === 'booking'
+                  ? 'aba-novo-agendamento'
+                  : 'aba-fila-espera'
             }
             className={styles.customerWorkspace}
             id="painel-agendamentos-cliente"
@@ -833,9 +868,15 @@ export function AppointmentsPage() {
                 reloadKey={customerAppointmentsReloadKey}
                 token={session.token}
               />
-            ) : session ? (
+            ) : session && activeCustomerView === 'booking' ? (
               <CustomerBooking
                 onAppointmentCreated={handleAppointmentCreated}
+                token={session.token}
+              />
+            ) : session ? (
+              <CustomerWaitlist
+                onAppointmentConfirmed={handleWaitlistAppointmentConfirmed}
+                onUnreadCountChange={setUnreadNotificationCount}
                 token={session.token}
               />
             ) : null}

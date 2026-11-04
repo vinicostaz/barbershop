@@ -95,6 +95,25 @@
     box-shadow var(--transition-fast);
 }
 
+.tabCounter {
+  min-width: 1.35rem;
+  min-height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  margin-left: var(--space-2);
+  padding-inline: 0.35rem;
+  color: var(--color-white);
+  background: var(--color-error);
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.activeViewTab .tabCounter {
+  color: var(--color-primary);
+  background: var(--color-white);
+}
+
 .customerViewTabs button:hover {
   color: var(--color-text);
 }
