@@ -7,6 +7,17 @@ export const notificacoesService = {
     return notificacoesRepository.findByUsuario(usuarioLogado.sub);
   },
 
+  // para o "sininho" do front: quantas notificações ainda não foram lidas
+  async contarNaoLidas(usuarioLogado: AuthPayload) {
+    const naoLidas = await notificacoesRepository.contarNaoLidas(usuarioLogado.sub);
+    return { naoLidas };
+  },
+
+  async marcarTodasComoLidas(usuarioLogado: AuthPayload) {
+    const atualizadas = await notificacoesRepository.marcarTodasComoLidas(usuarioLogado.sub);
+    return { atualizadas };
+  },
+
   async marcarComoLida(usuarioLogado: AuthPayload, id: string) {
     const notificacao = await notificacoesRepository.findById(id);
     if (!notificacao) {
