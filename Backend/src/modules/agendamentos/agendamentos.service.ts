@@ -15,6 +15,19 @@ import { agoraComoHoraDeParede } from "./agendamentos.tempo.js";
 // Programa de fidelidade: cada atendimento concluído vale 1 ponto para o cliente
 export const PONTOS_POR_ATENDIMENTO = 1;
 
+// Texto usado nas notificações: "Corte com João em 20/10 às 14:00".
+// As datas são hora de relógio salva como UTC, então basta ler os campos UTC.
+export function descreverAgendamento(agendamento: {
+  horaInicio: Date;
+  servico: { nome: string };
+  barbeiro: { nome: string };
+}) {
+  const iso = agendamento.horaInicio.toISOString();
+  const data = `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const hora = iso.slice(11, 16);
+  return `${agendamento.servico.nome} com ${agendamento.barbeiro.nome} em ${data} às ${hora}`;
+}
+
 interface CriarAgendamentoInput {
   barbeiroId: string;
   servicoId: string;
@@ -203,7 +216,21 @@ export const agendamentosService = {
       throw new AppError("Este agendamento não pode mais ser cancelado.", 400);
     }
 
-    const cancelado = await agendamentosRepository.updateStatus(id, "CANCELADO");
+    // se quem cancelou não foi o próprio cliente (barbeiro ou administrador), ele é avisado
+    const canceladoPeloCliente = agendamento.clienteId === usuarioLogado.sub;
+    const cancelado = await agendamentosRepository.cancelar(
+      id,
+      canceladoPeloCliente
+        ? undefined
+        : {
+            clienteId: agendamento.clienteId,
+            mensagem: `Seu agendamento de ${descreverAgendamento(agendamento)} foi cancelado pela barbearia.`,
+          }
+    );
+    if (!cancelado) {
+      // outra requisição mudou o status entre a leitura e o cancelamento
+      throw new AppError("Este agendamento não pode mais ser cancelado.", 409);
+    }
 
     // o horário ficou livre: avisa o próximo da fila
     await liberarHorario(agendamento.barbeiroId, agendamento.horaInicio, agendamento.horaFim);
@@ -237,7 +264,10 @@ export const agendamentosService = {
     const concluido = await agendamentosRepository.concluir(
       id,
       agendamento.clienteId,
-      PONTOS_POR_ATENDIMENTO
+      PONTOS_POR_ATENDIMENTO,
+      `Seu atendimento de ${descreverAgendamento(agendamento)} foi concluído e você ganhou ` +
+        `${PONTOS_POR_ATENDIMENTO} ponto${PONTOS_POR_ATENDIMENTO === 1 ? "" : "s"} de fidelidade. ` +
+        "Conte para a gente como foi: avalie o atendimento!"
     );
     if (!concluido) {
       // outra requisição mudou o status entre a leitura e a conclusão
