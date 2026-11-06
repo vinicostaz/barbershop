@@ -115,7 +115,12 @@ export const agendamentosRepository = {
   findByCliente(clienteId: string) {
     return db.agendamento.findMany({
       where: { clienteId },
-      include: { barbeiro: usuarioResumo, servico: true },
+      // avaliacao: null = ainda não avaliado (o front decide se mostra "Avaliar")
+      include: {
+        barbeiro: usuarioResumo,
+        servico: true,
+        avaliacao: { select: { id: true, nota: true, comentario: true, criadoEm: true } },
+      },
       orderBy: { horaInicio: "desc" },
     });
   },
