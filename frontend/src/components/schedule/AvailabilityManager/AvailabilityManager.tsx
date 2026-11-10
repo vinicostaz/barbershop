@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { adminService, type AdminProfessional } from '../../../services/admin'
 import {
   availabilityService,
@@ -6,6 +6,11 @@ import {
   type ScheduleBlock,
 } from '../../../services/availability'
 import { Button } from '../../ui/Button/Button'
+import { BrazilianDateField } from '../../ui/BrazilianDateField/BrazilianDateField'
+import {
+  formatBrazilianDate,
+  parseBrazilianDate,
+} from '../../ui/BrazilianDateField/brazilianDate'
 import {
   SelectField,
   TextareaField,
@@ -46,125 +51,11 @@ function maskTime(value: string) {
     : `${digits.slice(0, 2)}:${digits.slice(2)}`
 }
 
-function maskBrazilianDate(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
-}
-
 function localDateKey(date = new Date()) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
-}
-
-function formatBrazilianDate(dateKey: string) {
-  const [year, month, day] = dateKey.split('-')
-  return `${day}/${month}/${year}`
-}
-
-function parseBrazilianDate(value: string) {
-  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
-  if (!match) return null
-
-  const [, day, month, year] = match
-  const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
-  if (
-    parsed.getUTCFullYear() !== Number(year) ||
-    parsed.getUTCMonth() !== Number(month) - 1 ||
-    parsed.getUTCDate() !== Number(day)
-  ) {
-    return null
-  }
-
-  return `${year}-${month}-${day}`
-}
-
-type BrazilianDateFieldProps = {
-  id: string
-  label: string
-  min: string
-  onChange: (value: string) => void
-  value: string
-}
-
-function BrazilianDateField({
-  id,
-  label,
-  min,
-  onChange,
-  value,
-}: BrazilianDateFieldProps) {
-  const pickerRef = useRef<HTMLInputElement>(null)
-  const pickerValue = parseBrazilianDate(value) ?? ''
-
-  function openPicker() {
-    const picker = pickerRef.current
-    if (!picker) return
-
-    const pickerWithOptionalShow = picker as HTMLInputElement & {
-      showPicker?: () => void
-    }
-    if (typeof pickerWithOptionalShow.showPicker === 'function') {
-      pickerWithOptionalShow.showPicker()
-      return
-    }
-
-    picker.click()
-  }
-
-  return (
-    <label className={styles.localizedDateField} htmlFor={id}>
-      <span>
-        {label}
-        <span aria-hidden="true" className={styles.requiredIndicator}>
-          {' '}*
-        </span>
-      </span>
-      <span className={styles.localizedDateControl}>
-        <input
-          autoComplete="off"
-          id={id}
-          inputMode="numeric"
-          maxLength={10}
-          onChange={(event) => onChange(maskBrazilianDate(event.target.value))}
-          placeholder="DD/MM/AAAA"
-          required
-          type="text"
-          value={value}
-        />
-        <button
-          aria-label={`Abrir calendário para ${label.toLocaleLowerCase('pt-BR')}`}
-          onClick={openPicker}
-          type="button"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-          </svg>
-        </button>
-        <input
-          aria-hidden="true"
-          className={styles.nativeDatePicker}
-          lang="pt-BR"
-          min={min}
-          onChange={(event) =>
-            onChange(
-              event.target.value
-                ? formatBrazilianDate(event.target.value)
-                : '',
-            )
-          }
-          ref={pickerRef}
-          tabIndex={-1}
-          type="date"
-          value={pickerValue}
-        />
-      </span>
-      <small>DD/MM/AAAA</small>
-    </label>
-  )
 }
 
 function createEmptyBlockForm() {

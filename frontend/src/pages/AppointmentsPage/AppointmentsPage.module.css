@@ -95,6 +95,25 @@
     box-shadow var(--transition-fast);
 }
 
+.tabCounter {
+  min-width: 1.35rem;
+  min-height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  margin-left: var(--space-2);
+  padding-inline: 0.35rem;
+  color: var(--color-white);
+  background: var(--color-error);
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.activeViewTab .tabCounter {
+  color: var(--color-primary);
+  background: var(--color-white);
+}
+
 .customerViewTabs button:hover {
   color: var(--color-text);
 }
@@ -366,6 +385,41 @@
   gap: var(--space-4);
 }
 
+.timeSelection {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.timeLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.timeLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.timeLegend i {
+  width: 0.7rem;
+  height: 0.7rem;
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.availableDot {
+  background: var(--color-primary);
+}
+
+.occupiedDot {
+  background: var(--color-error);
+  opacity: 0.68;
+}
+
 .timeGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -374,6 +428,11 @@
 
 .timeGrid button {
   min-height: 4rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.2rem;
+  padding: var(--space-2);
   color: var(--color-text);
   background: var(--color-surface-strong);
   border: 1px solid var(--color-border);
@@ -387,6 +446,16 @@
     transform var(--transition-fast);
 }
 
+.timeGrid button strong {
+  font-size: var(--font-size-md);
+}
+
+.timeGrid button span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .timeGrid button:hover {
   transform: translateY(-2px);
   border-color: var(--color-primary);
@@ -396,6 +465,53 @@
   color: var(--color-white);
   background: var(--color-primary);
   border-color: var(--color-primary);
+}
+
+.timeGrid .selectedTime span {
+  color: var(--color-text-on-dark-muted);
+}
+
+.timeGrid .occupiedTime {
+  color: #8f2f38;
+  background: #fff0f1;
+  border-color: #dcaeb2;
+  opacity: 0.72;
+}
+
+.timeGrid .occupiedTime span {
+  color: #8f2f38;
+}
+
+.timeGrid .occupiedTime:hover {
+  border-color: var(--color-error);
+  opacity: 1;
+}
+
+.timeGrid .selectedOccupiedTime {
+  color: var(--color-white);
+  background: var(--color-error);
+  border-color: var(--color-error);
+  opacity: 1;
+}
+
+.timeGrid .selectedOccupiedTime span {
+  color: #ffe3e6;
+}
+
+.waitlistChoice {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  color: #7c2932;
+  background: #fff4f5;
+  border: 1px solid #e2b7bb;
+  border-left: 4px solid var(--color-error);
+  border-radius: var(--radius-md);
+  line-height: 1.55;
+}
+
+.waitlistChoice span {
+  font-size: var(--font-size-sm);
 }
 
 .review {
@@ -570,12 +686,20 @@
 
   .customerViewTabs {
     width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: var(--radius-lg);
   }
 
   .customerViewTabs button {
-    flex: 1;
-    padding-inline: var(--space-3);
+    min-width: 0;
+    padding-inline: var(--space-2);
+    font-size: 0.78rem;
     white-space: normal;
+  }
+
+  .customerViewTabs button:last-child {
+    grid-column: 1 / -1;
   }
 
   .workflow,
