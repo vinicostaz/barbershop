@@ -8,4 +8,6 @@ export const notificacoesRoutes = Router();
 notificacoesRoutes.use(authMiddleware); // cada usuário só vê as próprias notificações
 
 notificacoesRoutes.get("/", asyncHandler(notificacoesController.listar));
+notificacoesRoutes.get("/nao-lidas/contagem", asyncHandler(notificacoesController.contarNaoLidas));
+notificacoesRoutes.patch("/lidas", asyncHandler(notificacoesController.marcarTodasComoLidas));
 notificacoesRoutes.patch("/:id/lida", asyncHandler(notificacoesController.marcarComoLida));

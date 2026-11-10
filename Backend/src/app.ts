@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { agendamentosRoutes } from "./modules/agendamentos/agendamentos.routes.js";
+import { avaliacoesRoutes } from "./modules/avaliacoes/avaliacoes.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { barbeirosRoutes } from "./modules/barbeiros/barbeiros.routes.js";
 import { bloqueiosRoutes } from "./modules/bloqueios/bloqueios.routes.js";
@@ -27,6 +28,7 @@ app.use("/bloqueios", bloqueiosRoutes);
 app.use("/agendamentos", agendamentosRoutes);
 app.use("/fila-de-espera", filaDeEsperaRoutes);
 app.use("/notificacoes", notificacoesRoutes);
+app.use("/avaliacoes", avaliacoesRoutes);
 
 // o error handler tem que ser o ÚLTIMO middleware registrado
 app.use(errorHandler);
