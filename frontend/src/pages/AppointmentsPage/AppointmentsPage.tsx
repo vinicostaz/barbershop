@@ -19,6 +19,10 @@ import {
   type Professional,
   type Service,
 } from '../../services/catalog'
+import {
+  waitlistService,
+  type EligibleWaitlistTime,
+} from '../../services/waitlist'
 import styles from './AppointmentsPage.module.css'
 
 const steps = ['Serviço', 'Profissional', 'Data', 'Horário', 'Revisão']
@@ -160,9 +164,11 @@ function AppointmentsAgenda({ token }: { token: string }) {
 
 function CustomerBooking({
   onAppointmentCreated,
+  onWaitlistJoined,
   token,
 }: {
   onAppointmentCreated: (appointmentId: string) => void
+  onWaitlistJoined: () => void
   token: string
 }) {
   const [searchParams] = useSearchParams()
@@ -174,7 +180,13 @@ function CustomerBooking({
   const [selectedProfessionalId, setSelectedProfessionalId] = useState('')
   const [selectedDateId, setSelectedDateId] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
+  const [selectedTimeKind, setSelectedTimeKind] = useState<
+    'available' | 'waitlist' | ''
+  >('')
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
+  const [eligibleWaitlistTimes, setEligibleWaitlistTimes] = useState<
+    EligibleWaitlistTime[]
+  >([])
   const [confirmed, setConfirmed] = useState(false)
   const [catalogError, setCatalogError] = useState('')
   const [availabilityError, setAvailabilityError] = useState('')
@@ -252,7 +264,9 @@ function CustomerBooking({
         setAvailableDates(normalizedDates)
         setSelectedDateId(normalizedDates[0]?.id ?? '')
         setSelectedTime('')
+        setSelectedTimeKind('')
         setAvailableTimes([])
+        setEligibleWaitlistTimes([])
       } catch (requestError) {
         if (controller.signal.aborted) return
         setAvailabilityError(
@@ -286,7 +300,7 @@ function CustomerBooking({
         )
         if (!selectedService) return
 
-        const [times, customerAppointments] = await Promise.all([
+        const [times, customerAppointments, waitlistTimes] = await Promise.all([
           catalogService.listAvailableTimes(
             selectedProfessionalId,
             selectedDateId,
@@ -294,6 +308,13 @@ function CustomerBooking({
             controller.signal,
           ),
           appointmentsService.list(token, controller.signal),
+          waitlistService.listEligibleTimes(
+            selectedProfessionalId,
+            selectedServiceId,
+            selectedDateId,
+            token,
+            controller.signal,
+          ),
         ])
         setAvailableTimes(
           removeCustomerConflictingTimes(
@@ -303,12 +324,13 @@ function CustomerBooking({
             customerAppointments,
           ),
         )
+        setEligibleWaitlistTimes(waitlistTimes)
       } catch (requestError) {
         if (controller.signal.aborted) return
         setTimesError(
           requestError instanceof Error
             ? requestError.message
-            : 'Não foi possível consultar os horários livres.',
+            : 'Não foi possível consultar os horários.',
         )
       } finally {
         if (!controller.signal.aborted) setIsTimesLoading(false)
@@ -333,6 +355,16 @@ function CustomerBooking({
     (professional) => professional.id === selectedProfessionalId,
   )
   const selectedDate = availableDates.find((date) => date.id === selectedDateId)
+  const timeOptions = [
+    ...availableTimes.map((time) => ({
+      kind: 'available' as const,
+      time,
+    })),
+    ...eligibleWaitlistTimes.map((item) => ({
+      kind: 'waitlist' as const,
+      time: item.horaInicio,
+    })),
+  ].sort((first, second) => first.time.localeCompare(second.time))
 
   const canContinue = [
     Boolean(selectedService),
@@ -347,7 +379,9 @@ function CustomerBooking({
     setAvailableDates([])
     setSelectedDateId('')
     setSelectedTime('')
+    setSelectedTimeKind('')
     setAvailableTimes([])
+    setEligibleWaitlistTimes([])
     setTimesError('')
     setSubmitError('')
   }
@@ -357,7 +391,9 @@ function CustomerBooking({
     setAvailableDates([])
     setSelectedDateId('')
     setSelectedTime('')
+    setSelectedTimeKind('')
     setAvailableTimes([])
+    setEligibleWaitlistTimes([])
     setTimesError('')
     setSubmitError('')
   }
@@ -365,13 +401,54 @@ function CustomerBooking({
   function selectDate(id: string) {
     setSelectedDateId(id)
     setSelectedTime('')
+    setSelectedTimeKind('')
     setAvailableTimes([])
+    setEligibleWaitlistTimes([])
     setTimesError('')
     setSubmitError('')
   }
 
   async function handleNext() {
     if (!canContinue || isSubmitting) return
+
+    if (
+      currentStep === 3 &&
+      selectedTimeKind === 'waitlist' &&
+      selectedService &&
+      selectedProfessional &&
+      selectedDate
+    ) {
+      setIsSubmitting(true)
+      setSubmitError('')
+
+      try {
+        await waitlistService.join(
+          {
+            barbeiroId: selectedProfessional.id,
+            data: selectedDate.id,
+            horaInicio: selectedTime,
+            servicoId: selectedService.id,
+          },
+          token,
+        )
+        onWaitlistJoined()
+      } catch (requestError) {
+        setSubmitError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Não foi possível entrar na fila de espera.',
+        )
+
+        if (requestError instanceof ApiError && requestError.status === 409) {
+          setSelectedTime('')
+          setSelectedTimeKind('')
+          setTimesReloadKey((key) => key + 1)
+        }
+      } finally {
+        setIsSubmitting(false)
+      }
+      return
+    }
 
     if (currentStep < steps.length - 1) {
       setCurrentStep((step) => step + 1)
@@ -406,6 +483,7 @@ function CustomerBooking({
 
       if (requestError instanceof ApiError && requestError.status === 409) {
         setSelectedTime('')
+        setSelectedTimeKind('')
         setCurrentStep(3)
         setTimesReloadKey((key) => key + 1)
       }
@@ -421,7 +499,9 @@ function CustomerBooking({
     setAvailableDates([])
     setSelectedDateId('')
     setSelectedTime('')
+    setSelectedTimeKind('')
     setAvailableTimes([])
+    setEligibleWaitlistTimes([])
     setTimesError('')
     setSubmitError('')
     setConfirmed(false)
@@ -492,7 +572,8 @@ function CustomerBooking({
                   {currentStep === 0 && 'Qual cuidado você deseja reservar?'}
                   {currentStep === 1 && 'Com quem você prefere realizar o atendimento?'}
                   {currentStep === 2 && 'Escolha o melhor dia para você.'}
-                  {currentStep === 3 && 'Selecione um dos horários disponíveis.'}
+                  {currentStep === 3 &&
+                    'Escolha um horário livre ou entre na fila de um horário ocupado.'}
                   {currentStep === 4 && 'Confira suas escolhas antes de confirmar.'}
                 </p>
               </div>
@@ -582,7 +663,7 @@ function CustomerBooking({
 
               {currentStep === 3 && isTimesLoading && (
                 <div className={styles.emptyStep} role="status">
-                  Consultando horários livres...
+                  Consultando horários...
                 </div>
               )}
 
@@ -595,31 +676,71 @@ function CustomerBooking({
               {currentStep === 3 &&
                 !isTimesLoading &&
                 !timesError &&
-                availableTimes.length === 0 && (
+                availableTimes.length === 0 &&
+                eligibleWaitlistTimes.length === 0 && (
                 <div className={styles.emptyStep}>
-                  Não há horários livres que comportem este serviço nessa data.
+                  Não há horários livres ou filas disponíveis para este serviço nessa data.
                 </div>
               )}
 
               {currentStep === 3 &&
                 !isTimesLoading &&
                 !timesError &&
-                availableTimes.length > 0 && (
-                <div className={styles.timeGrid}>
-                  {availableTimes.map((time) => (
-                    <button
-                      aria-pressed={selectedTime === time}
-                      className={selectedTime === time ? styles.selectedTime : ''}
-                      key={time}
-                      onClick={() => {
-                        setSelectedTime(time)
-                        setSubmitError('')
-                      }}
-                      type="button"
-                    >
-                      {time}
-                    </button>
-                  ))}
+                (availableTimes.length > 0 ||
+                  eligibleWaitlistTimes.length > 0) && (
+                <div className={styles.timeSelection}>
+                  <div className={styles.timeLegend} aria-label="Legenda dos horários">
+                    <span><i className={styles.availableDot} />Livre</span>
+                    <span><i className={styles.occupiedDot} />Ocupado · fila disponível</span>
+                  </div>
+
+                  <div className={styles.timeGrid}>
+                    {timeOptions.map((option) => {
+                      const isWaitlist = option.kind === 'waitlist'
+                      const isSelected =
+                        selectedTime === option.time &&
+                        selectedTimeKind === option.kind
+
+                      return (
+                        <button
+                          aria-label={
+                            isWaitlist
+                              ? `${option.time}, horário ocupado com fila disponível`
+                              : `${option.time}, horário livre`
+                          }
+                          aria-pressed={isSelected}
+                          className={
+                            isWaitlist
+                              ? `${styles.occupiedTime} ${
+                                  isSelected ? styles.selectedOccupiedTime : ''
+                                }`
+                              : isSelected
+                                ? styles.selectedTime
+                                : ''
+                          }
+                          key={`${option.kind}-${option.time}`}
+                          onClick={() => {
+                            setSelectedTime(option.time)
+                            setSelectedTimeKind(option.kind)
+                            setSubmitError('')
+                          }}
+                          type="button"
+                        >
+                          <strong>{option.time}</strong>
+                          <span>{isWaitlist ? 'Entrar na fila' : 'Livre'}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {selectedTimeKind === 'waitlist' && (
+                    <div className={styles.waitlistChoice} role="status">
+                      <strong>Este horário já está ocupado.</strong>
+                      <span>
+                        Ao continuar, você entra na fila e será avisado se a vaga for liberada.
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -647,7 +768,11 @@ function CustomerBooking({
                   onClick={() => void handleNext()}
                 >
                   {isSubmitting
-                    ? 'Confirmando...'
+                    ? selectedTimeKind === 'waitlist'
+                      ? 'Entrando na fila...'
+                      : 'Confirmando...'
+                    : currentStep === 3 && selectedTimeKind === 'waitlist'
+                      ? 'Entrar na fila'
                     : currentStep === steps.length - 1
                       ? 'Confirmar agendamento'
                       : 'Continuar'}
@@ -676,7 +801,14 @@ function CustomerBooking({
             <div><dt>Serviço</dt><dd>{selectedService?.nome ?? 'A escolher'}</dd></div>
             <div><dt>Profissional</dt><dd>{selectedProfessional?.name ?? 'A escolher'}</dd></div>
             <div><dt>Data</dt><dd>{selectedDate?.label ?? 'A escolher'}</dd></div>
-            <div><dt>Horário</dt><dd>{selectedTime || 'A escolher'}</dd></div>
+            <div>
+              <dt>Horário</dt>
+              <dd>
+                {selectedTime
+                  ? `${selectedTime}${selectedTimeKind === 'waitlist' ? ' · fila de espera' : ''}`
+                  : 'A escolher'}
+              </dd>
+            </div>
           </dl>
           <div className={styles.total}>
             <span>Valor do serviço</span>
@@ -764,6 +896,19 @@ export function AppointmentsPage() {
     setHighlightedAppointmentId(appointmentId)
     setCustomerNotice('Horário da fila confirmado com sucesso.')
     setCustomerView('appointments')
+    scrollToCustomerWorkspace()
+  }
+
+  function handleWaitlistJoined() {
+    initialCustomerViewResolvedRef.current = true
+
+    if (hasBookingPreset) {
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.delete('servico')
+      nextSearchParams.delete('profissional')
+      setSearchParams(nextSearchParams, { replace: true })
+    }
+    setCustomerView('waitlist')
     scrollToCustomerWorkspace()
   }
 
@@ -871,6 +1016,7 @@ export function AppointmentsPage() {
             ) : session && activeCustomerView === 'booking' ? (
               <CustomerBooking
                 onAppointmentCreated={handleAppointmentCreated}
+                onWaitlistJoined={handleWaitlistJoined}
                 token={session.token}
               />
             ) : session ? (

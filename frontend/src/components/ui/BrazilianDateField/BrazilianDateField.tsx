@@ -86,7 +86,6 @@ export function BrazilianDateField({
           value={pickerValue}
         />
       </span>
-      <small>DD/MM/AAAA</small>
     </label>
   )
 }
