@@ -35,12 +35,17 @@ export type EligibleWaitlistTime = {
 }
 
 export type Notification = {
+  agendamentoId: string | null
   criadoEm: string
   filaDeEsperaId: string | null
   id: string
   lida: boolean
   mensagem: string
-  tipo: 'HORARIO_LIBERADO' | 'PRIORIDADE_EXPIRADA'
+  tipo:
+    | 'HORARIO_LIBERADO'
+    | 'PRIORIDADE_EXPIRADA'
+    | 'AGENDAMENTO_CANCELADO'
+    | 'ATENDIMENTO_CONCLUIDO'
   usuarioId: string
 }
 
