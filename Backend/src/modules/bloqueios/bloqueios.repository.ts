@@ -29,6 +29,26 @@ export const bloqueiosRepository = {
     });
   },
 
+  // bloqueios que se sobrepõem OU encostam em [inicio, fim) — candidatos a serem
+  // juntados num só (ex.: 10h-12h e 12h-14h viram 10h-14h)
+  findSobrepostosOuVizinhos(barbeiroId: string, inicio: Date, fim: Date) {
+    return db.bloqueioPeriodo.findMany({
+      where: { barbeiroId, inicio: { lte: fim }, fim: { gte: inicio } },
+      orderBy: { inicio: "asc" },
+    });
+  },
+
+  // troca os bloqueios antigos pelo bloqueio consolidado de uma vez só
+  substituir(
+    idsAntigos: string[],
+    data: { barbeiroId: string; inicio: Date; fim: Date; motivo?: string }
+  ) {
+    return db.$transaction(async (tx) => {
+      await tx.bloqueioPeriodo.deleteMany({ where: { id: { in: idsAntigos } } });
+      return tx.bloqueioPeriodo.create({ data });
+    });
+  },
+
   // quantos agendamentos confirmados cairiam dentro do período a bloquear
   contarAgendamentosConfirmados(barbeiroId: string, inicio: Date, fim: Date) {
     return db.agendamento.count({

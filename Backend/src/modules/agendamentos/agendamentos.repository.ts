@@ -115,7 +115,12 @@ export const agendamentosRepository = {
   findByCliente(clienteId: string) {
     return db.agendamento.findMany({
       where: { clienteId },
-      include: { barbeiro: usuarioResumo, servico: true },
+      // avaliacao: null = ainda não avaliado (o front decide se mostra "Avaliar")
+      include: {
+        barbeiro: usuarioResumo,
+        servico: true,
+        avaliacao: { select: { id: true, nota: true, comentario: true, criadoEm: true } },
+      },
       orderBy: { horaInicio: "desc" },
     });
   },
@@ -145,6 +150,55 @@ export const agendamentosRepository = {
       },
       select: { horaInicio: true, horaFim: true },
       orderBy: { horaInicio: "asc" },
+    });
+  },
+
+  // Marca como CONCLUIDO e soma os pontos do cliente na MESMA transação.
+  // O update só acontece se o agendamento ainda estiver CONFIRMADO: se duas
+  // requisições chegarem juntas, só a primeira conclui e o ponto não é dado em dobro.
+  // Retorna null quando o agendamento já tinha mudado de status.
+  // A notificação ao cliente (convite para avaliar) também entra na transação.
+  concluir(id: string, clienteId: string, pontos: number, mensagem: string) {
+    return db.$transaction(async (tx) => {
+      const { count } = await tx.agendamento.updateMany({
+        where: { id, status: "CONFIRMADO" },
+        data: { status: "CONCLUIDO" },
+      });
+      if (count === 0) return null;
+
+      await tx.usuario.update({
+        where: { id: clienteId },
+        data: { pontosFidelidade: { increment: pontos } },
+      });
+      await tx.notificacao.create({
+        data: { usuarioId: clienteId, tipo: "ATENDIMENTO_CONCLUIDO", mensagem, agendamentoId: id },
+      });
+      return tx.agendamento.findUnique({ where: { id }, include: includeCompleto });
+    });
+  },
+
+  // Cancela só se ainda estiver CONFIRMADO (dois cancelamentos simultâneos não
+  // geram dois avisos). Se avisarCliente vier, notifica o cliente na mesma transação.
+  // Retorna null quando o agendamento já tinha mudado de status.
+  cancelar(id: string, avisarCliente?: { clienteId: string; mensagem: string }) {
+    return db.$transaction(async (tx) => {
+      const { count } = await tx.agendamento.updateMany({
+        where: { id, status: "CONFIRMADO" },
+        data: { status: "CANCELADO" },
+      });
+      if (count === 0) return null;
+
+      if (avisarCliente) {
+        await tx.notificacao.create({
+          data: {
+            usuarioId: avisarCliente.clienteId,
+            tipo: "AGENDAMENTO_CANCELADO",
+            mensagem: avisarCliente.mensagem,
+            agendamentoId: id,
+          },
+        });
+      }
+      return tx.agendamento.findUniqueOrThrow({ where: { id } });
     });
   },
 

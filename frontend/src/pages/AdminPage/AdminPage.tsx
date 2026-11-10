@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/useAuth'
+import { AdminDashboard } from '../../components/admin/AdminDashboard'
 import { ProfessionalsManager } from '../../components/admin/ProfessionalsManager'
 import { ServicesManager } from '../../components/admin/ServicesManager'
 import { SpecialtiesManager } from '../../components/admin/SpecialtiesManager'
@@ -8,39 +9,63 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { Container } from '../../components/ui/Container/Container'
 import styles from './AdminPage.module.css'
 
-const administrativeModules = [
+type ManagementSection = 'dashboard' | 'professionals' | 'services' | 'specialties'
+
+type AdministrativeModule = {
+  description: string
+  number: string
+  pageSection?: 'agenda' | 'availability'
+  section?: ManagementSection
+  status?: string
+  title: string
+  to?: string
+}
+
+const administrativeModules: AdministrativeModule[] = [
+  {
+    description: 'Indicadores, próximos atendimentos e desempenho mensal da operação.',
+    number: '01',
+    section: 'dashboard',
+    title: 'Dashboard',
+  },
   {
     description: 'Cadastro, edição, preços, duração e disponibilidade no catálogo.',
-    number: '01',
+    number: '02',
     section: 'services',
     title: 'Serviços',
   },
   {
     description: 'Cadastro de profissionais e organização dos dados da equipe.',
-    number: '02',
+    number: '03',
     section: 'professionals',
     title: 'Profissionais',
   },
   {
     description: 'Organização das especialidades oferecidas pelos profissionais.',
-    number: '03',
+    number: '04',
     section: 'specialties',
     title: 'Especialidades',
   },
   {
     description: 'Consulta dos horários e acompanhamento dos atendimentos.',
-    number: '04',
+    number: '05',
     status: 'Disponível',
     title: 'Agendamentos',
     to: '/profissional',
   },
+  {
+    description: 'Horários semanais, folgas, pausas e períodos indisponíveis.',
+    number: '06',
+    pageSection: 'availability',
+    status: 'Disponível',
+    title: 'Disponibilidade',
+    to: '/profissional',
+  },
 ]
-
-type ManagementSection = 'professionals' | 'services' | 'specialties'
 
 export function AdminPage() {
   const { session } = useAuth()
-  const [activeSection, setActiveSection] = useState<ManagementSection>('services')
+  const [activeSection, setActiveSection] = useState<ManagementSection>('dashboard')
 
   function selectSection(section: ManagementSection) {
     setActiveSection(section)
@@ -64,19 +89,19 @@ export function AdminPage() {
             <Badge tone="brown">Área administrativa</Badge>
             <h1 id="titulo-administrativo">Controle da barbearia em um só lugar.</h1>
             <p>
-              Olá, {session?.usuario.nome.split(' ')[0]}. Esta é a estrutura
-              inicial para acompanhar e gerenciar a operação da barbearia.
+              Olá, {session?.usuario.nome.split(' ')[0]}. Acompanhe a operação,
+              antecipe os próximos atendimentos e gerencie a equipe em um só lugar.
             </p>
           </div>
 
           <aside className={styles.accessCard} aria-label="Informações de acesso">
             <span className={styles.accessLabel}>Acesso atual</span>
             <strong>Administrador</strong>
-            <p>Perfil autorizado para visualizar a estrutura administrativa.</p>
+            <p>Visão consolidada da agenda, do catálogo e da equipe.</p>
           </aside>
         </header>
 
-        <div className={styles.sectionHeading}>
+        <div className={styles.sectionHeading} id="admin-modules">
           <div>
             <span>Gestão da operação</span>
             <h2>Módulos administrativos</h2>
@@ -86,7 +111,15 @@ export function AdminPage() {
 
         <div className={styles.moduleGrid}>
           {administrativeModules.map(
-            ({ description, number, section, status = 'Gerenciar', title, to }) => {
+            ({
+              description,
+              number,
+              pageSection = 'agenda',
+              section,
+              status = 'Gerenciar',
+              title,
+              to,
+            }) => {
               const content = (
                 <>
                   <span className={styles.moduleNumber} aria-hidden="true">
@@ -111,7 +144,7 @@ export function AdminPage() {
                   <Link
                     className={styles.moduleCard}
                     key={title}
-                    state={{ fromAdmin: true }}
+                    state={{ fromAdmin: true, section: pageSection }}
                     to={to}
                   >
                     {content}
@@ -139,6 +172,9 @@ export function AdminPage() {
 
         {session && (
           <section className={styles.management} id="admin-management">
+            {activeSection === 'dashboard' && (
+              <AdminDashboard token={session.token} />
+            )}
             {activeSection === 'services' && <ServicesManager token={session.token} />}
             {activeSection === 'professionals' && (
               <ProfessionalsManager token={session.token} />

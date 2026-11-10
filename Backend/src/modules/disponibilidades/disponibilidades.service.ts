@@ -90,6 +90,68 @@ export function gerarHorariosLivres(
   return [...horarios].sort();
 }
 
+// O agendamento cabe inteiro no bloco? (mesma regra do gerarHorariosLivres:
+// o atendimento precisa caber num único bloco de expediente)
+function agendamentoCabeNoBloco(agendamento: IntervaloIndisponivel, bloco: DisponibilidadeInput) {
+  const inicio = agendamento.horaInicio;
+  const fim = agendamento.horaFim;
+  if (inicio.getUTCDay() !== bloco.diaSemana) return false;
+  if (inicio.toISOString().slice(0, 10) !== fim.toISOString().slice(0, 10)) return false;
+
+  const inicioMin = inicio.getUTCHours() * 60 + inicio.getUTCMinutes();
+  const fimMin = fim.getUTCHours() * 60 + fim.getUTCMinutes();
+  return inicioMin >= horaParaMinutos(bloco.horaInicio) && fimMin <= horaParaMinutos(bloco.horaFim);
+}
+
+// "Agendamentos fantasmas": quantos agendamentos estavam dentro do bloco que vai
+// mudar/sumir e deixariam de caber no expediente depois da mudança.
+// blocosDepois = como a agenda do barbeiro fica após a alteração.
+export function contarAgendamentosForaDoExpediente(
+  agendamentos: IntervaloIndisponivel[],
+  blocoAntes: DisponibilidadeInput,
+  blocosDepois: DisponibilidadeInput[]
+) {
+  return agendamentos.filter(
+    (agendamento) =>
+      agendamentoCabeNoBloco(agendamento, blocoAntes) &&
+      !blocosDepois.some((bloco) => agendamentoCabeNoBloco(agendamento, bloco))
+  ).length;
+}
+
+async function garantirSemAgendamentosAfetados(
+  barbeiroId: string,
+  blocoAntes: DisponibilidadeInput,
+  blocosDepois: DisponibilidadeInput[],
+  acao: string
+) {
+  const agendamentos = await disponibilidadesRepository.findAgendamentosConfirmadosFuturos(
+    barbeiroId,
+    agoraComoHoraDeParede()
+  );
+  const afetados = contarAgendamentosForaDoExpediente(agendamentos, blocoAntes, blocosDepois);
+  if (afetados > 0) {
+    throw new AppError(
+      `Não é possível ${acao}: ${afetados} agendamento(s) confirmado(s) ficariam fora do expediente. Cancele ou reagende antes.`,
+      409,
+      { agendamentosAfetados: afetados }
+    );
+  }
+}
+
+const NOMES_DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+// diasSemana precisa ser uma lista não vazia de números de 0 (domingo) a 6 (sábado).
+// Dias repetidos são ignorados e o resultado sai em ordem.
+export function normalizarDiasSemana(diasSemana: unknown): number[] {
+  if (!Array.isArray(diasSemana) || diasSemana.length === 0) {
+    throw new AppError("diasSemana deve ser uma lista com pelo menos um dia (0 a 6).");
+  }
+  if (!diasSemana.every((dia) => Number.isInteger(dia) && dia >= 0 && dia <= 6)) {
+    throw new AppError("diasSemana deve conter apenas números entre 0 (domingo) e 6 (sábado).");
+  }
+  return [...new Set(diasSemana as number[])].sort((a, b) => a - b);
+}
+
 function validar(input: Partial<DisponibilidadeInput>, completa = false) {
   if (completa) {
     if (!Number.isInteger(input.diaSemana)) {
@@ -163,8 +225,10 @@ async function buscarIndisponibilidades(barbeiroId: string, inicio: Date, fim: D
 export const disponibilidadesService = {
   async listarDatasDisponiveis(barbeiroId: string, servicoId: string, limite: number) {
     if (!servicoId) throw new AppError("servicoId é obrigatório.");
-    if (!Number.isInteger(limite) || limite < 1 || limite > 31) {
-      throw new AppError("limite deve ser um número inteiro entre 1 e 31.");
+    if (!Number.isInteger(limite) || limite < 1 || limite > DIAS_MAXIMOS_DE_BUSCA) {
+      throw new AppError(
+        `limite deve ser um número inteiro entre 1 e ${DIAS_MAXIMOS_DE_BUSCA}.`
+      );
     }
 
     await buscarBarbeiro(barbeiroId, true);
@@ -233,6 +297,49 @@ export const disponibilidadesService = {
     return disponibilidadesRepository.create({ barbeiroId, ...input });
   },
 
+  // Mesmo horário em vários dias da semana de uma vez (ex.: seg a sáb, 09:00-18:00).
+  // Tudo ou nada: se algum dia tiver conflito, nenhum é criado.
+  async criarVariosDias(
+    usuarioLogado: AuthPayload,
+    barbeiroId: string,
+    input: { diasSemana: unknown; horaInicio: string; horaFim: string }
+  ) {
+    garantirPermissao(usuarioLogado, barbeiroId);
+    const diasSemana = normalizarDiasSemana(input.diasSemana);
+    for (const diaSemana of diasSemana) {
+      validar({ diaSemana, horaInicio: input.horaInicio, horaFim: input.horaFim }, true);
+    }
+    await buscarBarbeiro(barbeiroId, false);
+
+    const diasEmConflito: number[] = [];
+    for (const diaSemana of diasSemana) {
+      const sobreposta = await disponibilidadesRepository.findSobreposta(
+        barbeiroId,
+        diaSemana,
+        input.horaInicio,
+        input.horaFim
+      );
+      if (sobreposta) diasEmConflito.push(diaSemana);
+    }
+    if (diasEmConflito.length > 0) {
+      const nomes = diasEmConflito.map((dia) => NOMES_DIAS[dia]).join(", ");
+      throw new AppError(
+        `Já existe disponibilidade que se sobrepõe a esse horário em: ${nomes}. Nenhum dia foi salvo.`,
+        409,
+        { diasEmConflito }
+      );
+    }
+
+    return disponibilidadesRepository.createVarios(
+      diasSemana.map((diaSemana) => ({
+        barbeiroId,
+        diaSemana,
+        horaInicio: input.horaInicio,
+        horaFim: input.horaFim,
+      }))
+    );
+  },
+
   async atualizar(
     usuarioLogado: AuthPayload,
     id: string,
@@ -259,6 +366,16 @@ export const disponibilidadesService = {
     if (sobreposta) {
       throw new AppError("Já existe uma disponibilidade que se sobrepõe a esse período.", 409);
     }
+
+    const outrosBlocos = (await disponibilidadesRepository.findByBarbeiro(atual.barbeiroId)).filter(
+      (bloco) => bloco.id !== id
+    );
+    await garantirSemAgendamentosAfetados(
+      atual.barbeiroId,
+      atual,
+      [...outrosBlocos, dados],
+      "alterar essa disponibilidade"
+    );
     return disponibilidadesRepository.update(id, dados);
   },
 
@@ -266,6 +383,16 @@ export const disponibilidadesService = {
     const disponibilidade = await disponibilidadesRepository.findById(id);
     if (!disponibilidade) throw new AppError("Disponibilidade não encontrada.", 404);
     garantirPermissao(usuarioLogado, disponibilidade.barbeiroId);
+
+    const outrosBlocos = (
+      await disponibilidadesRepository.findByBarbeiro(disponibilidade.barbeiroId)
+    ).filter((bloco) => bloco.id !== id);
+    await garantirSemAgendamentosAfetados(
+      disponibilidade.barbeiroId,
+      disponibilidade,
+      outrosBlocos,
+      "remover essa disponibilidade"
+    );
     return disponibilidadesRepository.delete(id);
   },
 };

@@ -10,6 +10,23 @@ import {
   validarDisponibilidade,
 } from "./agendamentos.horario.js";
 import { agendamentosRepository } from "./agendamentos.repository.js";
+import { agoraComoHoraDeParede } from "./agendamentos.tempo.js";
+
+// Programa de fidelidade: cada atendimento concluído vale 1 ponto para o cliente
+export const PONTOS_POR_ATENDIMENTO = 1;
+
+// Texto usado nas notificações: "Corte com João em 20/10 às 14:00".
+// As datas são hora de relógio salva como UTC, então basta ler os campos UTC.
+export function descreverAgendamento(agendamento: {
+  horaInicio: Date;
+  servico: { nome: string };
+  barbeiro: { nome: string };
+}) {
+  const iso = agendamento.horaInicio.toISOString();
+  const data = `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const hora = iso.slice(11, 16);
+  return `${agendamento.servico.nome} com ${agendamento.barbeiro.nome} em ${data} às ${hora}`;
+}
 
 interface CriarAgendamentoInput {
   barbeiroId: string;
@@ -199,11 +216,64 @@ export const agendamentosService = {
       throw new AppError("Este agendamento não pode mais ser cancelado.", 400);
     }
 
-    const cancelado = await agendamentosRepository.updateStatus(id, "CANCELADO");
+    // se quem cancelou não foi o próprio cliente (barbeiro ou administrador), ele é avisado
+    const canceladoPeloCliente = agendamento.clienteId === usuarioLogado.sub;
+    const cancelado = await agendamentosRepository.cancelar(
+      id,
+      canceladoPeloCliente
+        ? undefined
+        : {
+            clienteId: agendamento.clienteId,
+            mensagem: `Seu agendamento de ${descreverAgendamento(agendamento)} foi cancelado pela barbearia.`,
+          }
+    );
+    if (!cancelado) {
+      // outra requisição mudou o status entre a leitura e o cancelamento
+      throw new AppError("Este agendamento não pode mais ser cancelado.", 409);
+    }
 
     // o horário ficou livre: avisa o próximo da fila
     await liberarHorario(agendamento.barbeiroId, agendamento.horaInicio, agendamento.horaFim);
     return cancelado;
+  },
+
+  // Concluir atendimento: o barbeiro do agendamento (ou um administrador) marca
+  // como realizado, e o cliente ganha pontos de fidelidade.
+  async concluir(usuarioLogado: AuthPayload, id: string) {
+    const agendamento = await agendamentosRepository.findById(id);
+    if (!agendamento) {
+      throw new AppError("Agendamento não encontrado.", 404);
+    }
+
+    const ehBarbeiroDoAtendimento =
+      usuarioLogado.role === "BARBEIRO" && agendamento.barbeiroId === usuarioLogado.sub;
+    const ehAdministrador = usuarioLogado.role === "ADMINISTRADOR";
+    if (!ehBarbeiroDoAtendimento && !ehAdministrador) {
+      throw new AppError("Apenas o barbeiro do atendimento ou um administrador pode concluí-lo.", 403);
+    }
+
+    if (agendamento.status !== "CONFIRMADO") {
+      throw new AppError("Apenas agendamentos confirmados podem ser concluídos.", 400);
+    }
+
+    // não dá para concluir um atendimento que ainda nem começou
+    if (agendamento.horaInicio.getTime() > agoraComoHoraDeParede().getTime()) {
+      throw new AppError("Só é possível concluir um atendimento depois do horário de início.", 400);
+    }
+
+    const concluido = await agendamentosRepository.concluir(
+      id,
+      agendamento.clienteId,
+      PONTOS_POR_ATENDIMENTO,
+      `Seu atendimento de ${descreverAgendamento(agendamento)} foi concluído e você ganhou ` +
+        `${PONTOS_POR_ATENDIMENTO} ponto${PONTOS_POR_ATENDIMENTO === 1 ? "" : "s"} de fidelidade. ` +
+        "Conte para a gente como foi: avalie o atendimento!"
+    );
+    if (!concluido) {
+      // outra requisição mudou o status entre a leitura e a conclusão
+      throw new AppError("Este agendamento já foi concluído ou cancelado.", 409);
+    }
+    return concluido;
   },
 
   // UC11 / UC16 - histórico do cliente e agenda do barbeiro, com o mesmo endpoint
