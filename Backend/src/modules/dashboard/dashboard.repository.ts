@@ -3,6 +3,14 @@ import { db } from "../../prisma/client.js";
 const pessoaResumo = { select: { id: true, nome: true } } as const;
 
 export const dashboardRepository = {
+  buscarDatasComAgendamentos() {
+    return db.agendamento.findMany({
+      distinct: ["data"],
+      select: { data: true },
+      orderBy: { data: "desc" },
+    });
+  },
+
   buscarAgendamentosDoPeriodo(inicio: Date, fim: Date) {
     return db.agendamento.findMany({
       where: { horaInicio: { gte: inicio, lt: fim } },

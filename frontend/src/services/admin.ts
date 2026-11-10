@@ -67,6 +67,7 @@ export type DashboardSummary = {
     agendamentos: number
     hora: string
   }>
+  mesesDisponiveis: string[]
   periodo: {
     fim: string
     inicio: string
@@ -137,9 +138,10 @@ function normalizeProfessional(professional: ApiProfessional): AdminProfessional
 }
 
 export const adminService = {
-  dashboard(mes: string, token: string, signal?: AbortSignal) {
+  dashboard(mes: string | undefined, token: string, signal?: AbortSignal) {
+    const query = mes ? `?mes=${encodeURIComponent(mes)}` : ''
     return apiRequest<DashboardSummary>(
-      `/dashboard/resumo?mes=${encodeURIComponent(mes)}`,
+      `/dashboard/resumo${query}`,
       withAuthorization(token, { signal }),
     )
   },

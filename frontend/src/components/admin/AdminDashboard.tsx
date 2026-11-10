@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import {
   adminService,
@@ -68,18 +68,6 @@ function toMonthKey(date: Date) {
 function parseMonth(monthKey: string) {
   const [year, month] = monthKey.split('-').map(Number)
   return new Date(year, month - 1, 1, 12)
-}
-
-function monthOptions() {
-  const current = new Date()
-
-  return Array.from({ length: 18 }, (_, index) => {
-    const date = new Date(current.getFullYear(), current.getMonth() - index, 1, 12)
-    return {
-      label: capitalize(monthFormatter.format(date)),
-      value: toMonthKey(date),
-    }
-  })
 }
 
 function appointmentTime(value: string) {
@@ -215,7 +203,6 @@ export function AdminDashboard({ token }: { token: string }) {
   const [reloadKey, setReloadKey] = useState(0)
   const [selectedMonthKey, setSelectedMonthKey] = useState(() => toMonthKey(new Date()))
   const [view, setView] = useState<DashboardView>('geral')
-  const availableMonths = useMemo(() => monthOptions(), [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -231,6 +218,7 @@ export function AdminDashboard({ token }: { token: string }) {
           controller.signal,
         )
         setDashboard(result)
+        setSelectedMonthKey(result.periodo.mes)
         setLastUpdatedAt(new Date())
       } catch (requestError) {
         if (controller.signal.aborted) return
@@ -247,6 +235,11 @@ export function AdminDashboard({ token }: { token: string }) {
     void loadDashboard()
     return () => controller.abort()
   }, [reloadKey, selectedMonthKey, token])
+
+  const availableMonths = (dashboard?.mesesDisponiveis ?? []).map((monthKey) => ({
+    label: capitalize(monthFormatter.format(parseMonth(monthKey))),
+    value: monthKey,
+  }))
 
   const currentMonth = capitalize(monthFormatter.format(parseMonth(selectedMonthKey)))
   const totalStatus = dashboard
@@ -304,9 +297,13 @@ export function AdminDashboard({ token }: { token: string }) {
           <label className={styles.periodControl}>
             <span>Mês de referência</span>
             <select
+              disabled={availableMonths.length === 0}
               onChange={(event) => setSelectedMonthKey(event.target.value)}
-              value={selectedMonthKey}
+              value={availableMonths.length === 0 ? '' : selectedMonthKey}
             >
+              {availableMonths.length === 0 && (
+                <option value="">Nenhum mês com dados</option>
+              )}
               {availableMonths.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}

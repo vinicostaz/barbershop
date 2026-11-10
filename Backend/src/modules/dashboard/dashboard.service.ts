@@ -210,7 +210,16 @@ export const dashboardService = {
       throw new AppError("Apenas administradores podem acessar o dashboard.", 403);
     }
 
-    const periodo = periodoDoMes(mes);
+    const datasComAgendamentos = await dashboardRepository.buscarDatasComAgendamentos();
+    const mesesDisponiveis = [
+      ...new Set(datasComAgendamentos.map((item) => dataKey(item.data).slice(0, 7))),
+    ];
+    const mesSolicitado = mes === undefined ? undefined : periodoDoMes(mes).mes;
+    const mesSelecionado =
+      (mesSolicitado && mesesDisponiveis.includes(mesSolicitado) ? mesSolicitado : undefined) ??
+      mesesDisponiveis[0] ??
+      dataKey(agoraComoHoraDeParede()).slice(0, 7);
+    const periodo = periodoDoMes(mesSelecionado);
     const [agendamentos, proximos, clientesNovos, profissionaisAtivos, servicosCadastrados] =
       await Promise.all([
         dashboardRepository.buscarAgendamentosDoPeriodo(periodo.inicio, periodo.fim),
@@ -226,6 +235,7 @@ export const dashboardService = {
         profissionaisAtivos,
         servicosCadastrados,
       }),
+      mesesDisponiveis,
       proximosAgendamentos: proximos.map((item) => ({
         barbeiro: item.barbeiro,
         cliente: item.cliente,
