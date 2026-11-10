@@ -46,6 +46,76 @@ export type ProfessionalInput = {
   telefone?: string
 }
 
+export type DashboardStatus =
+  | 'CANCELADO'
+  | 'CONCLUIDO'
+  | 'CONFIRMADO'
+  | 'REAGENDADO'
+
+export type DashboardSummary = {
+  clientes: {
+    novos: number
+    recorrentes: number
+    taxaRecorrencia: number
+    unicos: number
+  }
+  contexto: {
+    profissionaisAtivos: number
+    servicosCadastrados: number
+  }
+  horariosPico: Array<{
+    agendamentos: number
+    hora: string
+  }>
+  periodo: {
+    fim: string
+    inicio: string
+    mes: string
+  }
+  profissionais: Array<{
+    agendamentos: number
+    avaliacaoMedia: number | null
+    cancelamentos: number
+    concluidos: number
+    faturamento: number
+    id: string
+    nome: string
+    totalAvaliacoes: number
+  }>
+  proximosAgendamentos: Array<{
+    barbeiro: { id: string; nome: string }
+    cliente: { id: string; nome: string }
+    horaFim: string
+    horaInicio: string
+    id: string
+    servico: { id: string; nome: string }
+  }>
+  resumo: {
+    agendamentos: number
+    avaliacaoMedia: number | null
+    cancelamentos: number
+    concluidos: number
+    faturamento: number
+    reagendamentos: number
+    taxaCancelamento: number
+    taxaReagendamento: number
+    ticketMedio: number
+    totalAvaliacoes: number
+  }
+  serieDiaria: Array<{
+    agendamentos: number
+    data: string
+    faturamento: number
+  }>
+  servicos: Array<{
+    agendamentos: number
+    faturamento: number
+    id: string
+    nome: string
+  }>
+  status: Record<DashboardStatus, number>
+}
+
 function withAuthorization(token: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers)
   headers.set('Authorization', `Bearer ${token}`)
@@ -67,6 +137,13 @@ function normalizeProfessional(professional: ApiProfessional): AdminProfessional
 }
 
 export const adminService = {
+  dashboard(mes: string, token: string, signal?: AbortSignal) {
+    return apiRequest<DashboardSummary>(
+      `/dashboard/resumo?mes=${encodeURIComponent(mes)}`,
+      withAuthorization(token, { signal }),
+    )
+  },
+
   async listServices(signal?: AbortSignal) {
     const services = await apiRequest<
       Array<Omit<AdminService, 'preco'> & { preco: number | string }>
