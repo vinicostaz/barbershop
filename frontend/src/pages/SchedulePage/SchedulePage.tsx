@@ -93,17 +93,45 @@ function appointmentTime(value: string) {
   return `${hour}:${minute}`
 }
 
+function appointmentWallClockTimestamp(value: string) {
+  const date = new Date(value)
+
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+  ).getTime()
+}
+
+function canCompleteAppointment(appointment: Appointment) {
+  return (
+    appointment.status === 'CONFIRMADO' &&
+    appointmentWallClockTimestamp(appointment.horaInicio) <= Date.now()
+  )
+}
+
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function ScheduleCard({
   appointment,
+  completionError,
+  isCompleting,
+  onComplete,
   showProfessional,
 }: {
   appointment: Appointment
+  completionError?: string
+  isCompleting: boolean
+  onComplete: (appointment: Appointment) => Promise<void>
   showProfessional: boolean
 }) {
+  const [isConfirmingCompletion, setIsConfirmingCompletion] = useState(false)
+  const canComplete = canCompleteAppointment(appointment)
+
   return (
     <article className={styles.appointmentCard}>
       <div className={styles.cardTime}>
@@ -137,6 +165,47 @@ function ScheduleCard({
             </div>
           )}
         </dl>
+
+        {canComplete && (
+          <div className={styles.completionArea}>
+            {!isConfirmingCompletion ? (
+              <Button
+                disabled={isCompleting}
+                onClick={() => setIsConfirmingCompletion(true)}
+                size="small"
+              >
+                Concluir atendimento
+              </Button>
+            ) : (
+              <div className={styles.completionConfirmation}>
+                <p>Confirma que este atendimento foi realizado?</p>
+                {completionError && (
+                  <p className={styles.completionError} role="alert">
+                    {completionError}
+                  </p>
+                )}
+                <div>
+                  <Button
+                    disabled={isCompleting}
+                    onClick={() => setIsConfirmingCompletion(false)}
+                    size="small"
+                    variant="ghost"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    disabled={isCompleting}
+                    onClick={() => void onComplete(appointment)}
+                    size="small"
+                    variant="secondary"
+                  >
+                    {isCompleting ? 'Concluindo...' : 'Confirmar conclusão'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )
@@ -155,6 +224,10 @@ export function SchedulePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [completingId, setCompletingId] = useState('')
+  const [completionError, setCompletionError] = useState('')
+  const [completionErrorId, setCompletionErrorId] = useState('')
+  const [actionFeedback, setActionFeedback] = useState('')
 
   const isAdministrator = session?.usuario.role === 'ADMINISTRADOR'
   const token = session?.token
@@ -281,6 +354,32 @@ export function SchedulePage() {
     setSelectedDate(today)
   }
 
+  async function completeAppointment(appointment: Appointment) {
+    if (!token || completingId) return
+
+    setCompletingId(appointment.id)
+    setCompletionError('')
+    setCompletionErrorId('')
+    setActionFeedback('')
+
+    try {
+      await appointmentsService.complete(appointment.id, token)
+      setActionFeedback(
+        `Atendimento de ${appointment.cliente?.nome ?? 'cliente'} concluído com sucesso.`,
+      )
+      setReloadKey((key) => key + 1)
+    } catch (requestError) {
+      setCompletionError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível concluir o atendimento.',
+      )
+      setCompletionErrorId(appointment.id)
+    } finally {
+      setCompletingId('')
+    }
+  }
+
   return (
     <section className={styles.page} aria-labelledby="schedule-title">
       <Container>
@@ -352,6 +451,12 @@ export function SchedulePage() {
             Disponibilidade e bloqueios
           </button>
         </div>
+
+        {actionFeedback && (
+          <p className={styles.actionFeedback} role="status">
+            {actionFeedback}
+          </p>
+        )}
 
         {pageSection === 'agenda' ? (
           <>
@@ -567,7 +672,14 @@ export function SchedulePage() {
                   selectedDayAppointments.map((appointment) => (
                     <ScheduleCard
                       appointment={appointment}
+                      completionError={
+                        completionErrorId === appointment.id
+                          ? completionError
+                          : undefined
+                      }
+                      isCompleting={completingId === appointment.id}
                       key={appointment.id}
+                      onComplete={completeAppointment}
                       showProfessional={isAdministrator}
                     />
                   ))

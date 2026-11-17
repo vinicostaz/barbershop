@@ -116,6 +116,16 @@
   background: var(--color-navy-900);
 }
 
+.actionFeedback {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  color: var(--color-success);
+  background: #f2f8f4;
+  border: 1px solid #b9d2c2;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
 .toolbar {
   display: flex;
   align-items: end;
@@ -621,6 +631,38 @@
   text-align: right;
 }
 
+.completionArea {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.completionConfirmation {
+  padding: var(--space-3);
+  background: var(--color-ivory-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.completionConfirmation > p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.completionConfirmation .completionError {
+  margin-top: var(--space-3);
+  color: var(--color-error);
+}
+
+.completionConfirmation > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
 .emptyDay {
   min-height: 10rem;
   display: grid;
@@ -698,6 +740,17 @@
     overflow-x: auto;
     grid-template-columns: repeat(7, minmax(6.5rem, 1fr));
     scrollbar-width: thin;
+  }
+}
+
+@media (max-width: 40rem) {
+  .completionArea > button,
+  .completionConfirmation > div button {
+    width: 100%;
+  }
+
+  .completionConfirmation > div {
+    flex-direction: column-reverse;
   }
 }
 
