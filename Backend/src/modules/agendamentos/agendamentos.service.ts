@@ -28,6 +28,14 @@ export function descreverAgendamento(agendamento: {
   return `${agendamento.servico.nome} com ${agendamento.barbeiro.nome} em ${data} às ${hora}`;
 }
 
+function mensagemDeConclusao(agendamento: Parameters<typeof descreverAgendamento>[0]) {
+  return (
+    `Seu atendimento de ${descreverAgendamento(agendamento)} foi concluído e você ganhou ` +
+    `${PONTOS_POR_ATENDIMENTO} ponto${PONTOS_POR_ATENDIMENTO === 1 ? "" : "s"} de fidelidade. ` +
+    "Conte para a gente como foi: avalie o atendimento!"
+  );
+}
+
 interface CriarAgendamentoInput {
   barbeiroId: string;
   servicoId: string;
@@ -212,6 +220,31 @@ export const agendamentosService = {
       throw new AppError("Você não tem permissão para cancelar este agendamento.", 403);
     }
 
+    if (agendamento.status === "CONCLUIDO") {
+      const ehBarbeiroDoAtendimento =
+        usuarioLogado.role === "BARBEIRO" && agendamento.barbeiroId === usuarioLogado.sub;
+      if (!ehBarbeiroDoAtendimento && !ehAdministrador) {
+        throw new AppError(
+          "Apenas o barbeiro do atendimento ou um administrador pode corrigir uma conclusão.",
+          403
+        );
+      }
+      if (agendamento.avaliacao) {
+        throw new AppError("Um atendimento já avaliado não pode ser cancelado.", 400);
+      }
+
+      const cancelado = await agendamentosRepository.cancelarConcluido(
+        id,
+        agendamento.clienteId,
+        PONTOS_POR_ATENDIMENTO,
+        `Seu agendamento de ${descreverAgendamento(agendamento)} foi cancelado pela barbearia.`
+      );
+      if (!cancelado) {
+        throw new AppError("Este atendimento não pode mais ser cancelado.", 409);
+      }
+      return cancelado;
+    }
+
     if (agendamento.status !== "CONFIRMADO") {
       throw new AppError("Este agendamento não pode mais ser cancelado.", 400);
     }
@@ -256,18 +289,16 @@ export const agendamentosService = {
       throw new AppError("Apenas agendamentos confirmados podem ser concluídos.", 400);
     }
 
-    // não dá para concluir um atendimento que ainda nem começou
-    if (agendamento.horaInicio.getTime() > agoraComoHoraDeParede().getTime()) {
-      throw new AppError("Só é possível concluir um atendimento depois do horário de início.", 400);
+    // A conclusão representa o atendimento inteiro, então só acontece após o término.
+    if (agendamento.horaFim.getTime() > agoraComoHoraDeParede().getTime()) {
+      throw new AppError("Só é possível concluir um atendimento depois do horário de término.", 400);
     }
 
     const concluido = await agendamentosRepository.concluir(
       id,
       agendamento.clienteId,
       PONTOS_POR_ATENDIMENTO,
-      `Seu atendimento de ${descreverAgendamento(agendamento)} foi concluído e você ganhou ` +
-        `${PONTOS_POR_ATENDIMENTO} ponto${PONTOS_POR_ATENDIMENTO === 1 ? "" : "s"} de fidelidade. ` +
-        "Conte para a gente como foi: avalie o atendimento!"
+      mensagemDeConclusao(agendamento)
     );
     if (!concluido) {
       // outra requisição mudou o status entre a leitura e a conclusão
@@ -277,7 +308,31 @@ export const agendamentosService = {
   },
 
   // UC11 / UC16 - histórico do cliente e agenda do barbeiro, com o mesmo endpoint
-  listarParaUsuarioLogado(usuarioLogado: AuthPayload) {
+  // Persiste automaticamente os atendimentos cujo horário de término passou.
+  // O método concluir é atômico, então execuções simultâneas não duplicam pontos
+  // nem notificações.
+  async concluirEncerrados() {
+    const encerrados = await agendamentosRepository.findConfirmadosEncerrados(
+      agoraComoHoraDeParede()
+    );
+    let totalConcluidos = 0;
+
+    for (const agendamento of encerrados) {
+      const concluido = await agendamentosRepository.concluir(
+        agendamento.id,
+        agendamento.clienteId,
+        PONTOS_POR_ATENDIMENTO,
+        mensagemDeConclusao(agendamento)
+      );
+      if (concluido) totalConcluidos += 1;
+    }
+
+    return totalConcluidos;
+  },
+
+  async listarParaUsuarioLogado(usuarioLogado: AuthPayload) {
+    await this.concluirEncerrados();
+
     if (usuarioLogado.role === "CLIENTE") {
       return agendamentosRepository.findByCliente(usuarioLogado.sub);
     }

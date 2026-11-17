@@ -450,6 +450,15 @@ export function CustomerAppointments({
   const [internalReloadKey, setInternalReloadKey] = useState(0)
 
   useEffect(() => {
+    const timer = window.setInterval(
+      () => setInternalReloadKey((key) => key + 1),
+      60_000,
+    )
+
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
     const controller = new AbortController()
 
     async function loadAppointments() {

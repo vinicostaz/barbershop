@@ -1,6 +1,7 @@
 import type { AuthPayload } from "../../middlewares/authMiddleware.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { db } from "../../prisma/client.js";
+import { agendamentosService } from "../agendamentos/agendamentos.service.js";
 import { avaliacoesRepository } from "./avaliacoes.repository.js";
 
 export const NOTA_MINIMA = 1;
@@ -58,6 +59,8 @@ export const avaliacoesService = {
       throw new AppError("Apenas clientes podem avaliar atendimentos.", 403);
     }
     const dados = validarAvaliacao(input);
+
+    await agendamentosService.concluirEncerrados();
 
     const agendamento = await avaliacoesRepository.findAgendamento(dados.agendamentoId);
     if (!agendamento) {
