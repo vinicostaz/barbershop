@@ -13,6 +13,7 @@ import { BookingDatePicker } from '../BookingDatePicker/BookingDatePicker'
 import styles from './CustomerAppointments.module.css'
 
 type CustomerAppointmentsProps = {
+  evaluationAppointmentId?: string
   highlightedAppointmentId?: string
   notice?: string
   onCreateAppointment: () => void
@@ -430,6 +431,7 @@ function EvaluationForm({
 }
 
 export function CustomerAppointments({
+  evaluationAppointmentId,
   highlightedAppointmentId,
   notice,
   onCreateAppointment,
@@ -438,10 +440,14 @@ export function CustomerAppointments({
   token,
 }: CustomerAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [viewMode, setViewMode] = useState<ViewMode>('upcoming')
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    evaluationAppointmentId ? 'history' : 'upcoming',
+  )
   const [cancelConfirmationId, setCancelConfirmationId] = useState('')
   const [rescheduleId, setRescheduleId] = useState('')
-  const [evaluationId, setEvaluationId] = useState('')
+  const [evaluationId, setEvaluationId] = useState(
+    evaluationAppointmentId ?? '',
+  )
   const [busyAppointmentId, setBusyAppointmentId] = useState('')
   const [feedback, setFeedback] = useState(notice ?? '')
   const [loadError, setLoadError] = useState('')
@@ -510,6 +516,18 @@ export function CustomerAppointments({
   }, [appointments])
 
   const visibleAppointments = viewMode === 'upcoming' ? upcoming : history
+
+  useEffect(() => {
+    if (!evaluationAppointmentId || isLoading || viewMode !== 'history') return
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`agendamento-${evaluationAppointmentId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [evaluationAppointmentId, isLoading, viewMode])
 
   function refreshAppointments(message: string) {
     setCancelConfirmationId('')
@@ -628,7 +646,8 @@ export function CustomerAppointments({
             {visibleAppointments.map((appointment) => {
               const isCancelling = cancelConfirmationId === appointment.id
               const isRescheduling = rescheduleId === appointment.id
-              const isEvaluating = evaluationId === appointment.id
+              const isEvaluating =
+                evaluationId === appointment.id && !appointment.avaliacao
               const isBusy = busyAppointmentId === appointment.id
 
               return (
@@ -638,6 +657,7 @@ export function CustomerAppointments({
                       ? styles.highlightedCard
                       : ''
                   }`}
+                  id={`agendamento-${appointment.id}`}
                   key={appointment.id}
                 >
                   <div className={styles.cardTopline}>

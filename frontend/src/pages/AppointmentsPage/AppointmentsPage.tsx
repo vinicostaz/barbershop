@@ -831,6 +831,7 @@ export function AppointmentsPage() {
   const [customerAppointmentsReloadKey, setCustomerAppointmentsReloadKey] =
     useState(0)
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState('')
+  const [evaluationAppointmentId, setEvaluationAppointmentId] = useState('')
   const [customerNotice, setCustomerNotice] = useState('')
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [customerView, setCustomerView] =
@@ -870,6 +871,7 @@ export function AppointmentsPage() {
     if (view === 'booking') {
       setCustomerNotice('')
       setHighlightedAppointmentId('')
+      setEvaluationAppointmentId('')
     }
     setCustomerView(view)
     scrollToCustomerWorkspace()
@@ -886,6 +888,7 @@ export function AppointmentsPage() {
     }
     setCustomerAppointmentsReloadKey((key) => key + 1)
     setHighlightedAppointmentId(appointmentId)
+    setEvaluationAppointmentId('')
     setCustomerNotice('Agendamento criado com sucesso.')
     setCustomerView('appointments')
     scrollToCustomerWorkspace()
@@ -894,6 +897,7 @@ export function AppointmentsPage() {
   function handleWaitlistAppointmentConfirmed(appointmentId: string) {
     setCustomerAppointmentsReloadKey((key) => key + 1)
     setHighlightedAppointmentId(appointmentId)
+    setEvaluationAppointmentId('')
     setCustomerNotice('Horário da fila confirmado com sucesso.')
     setCustomerView('appointments')
     scrollToCustomerWorkspace()
@@ -909,6 +913,15 @@ export function AppointmentsPage() {
       setSearchParams(nextSearchParams, { replace: true })
     }
     setCustomerView('waitlist')
+    scrollToCustomerWorkspace()
+  }
+
+  function handleEvaluateAppointment(appointmentId: string) {
+    initialCustomerViewResolvedRef.current = true
+    setHighlightedAppointmentId(appointmentId)
+    setEvaluationAppointmentId(appointmentId)
+    setCustomerNotice('')
+    setCustomerView('appointments')
     scrollToCustomerWorkspace()
   }
 
@@ -1006,6 +1019,7 @@ export function AppointmentsPage() {
           >
             {session && activeCustomerView === 'appointments' ? (
               <CustomerAppointments
+                evaluationAppointmentId={evaluationAppointmentId}
                 highlightedAppointmentId={highlightedAppointmentId}
                 notice={customerNotice}
                 onCreateAppointment={() => showCustomerView('booking')}
@@ -1022,6 +1036,7 @@ export function AppointmentsPage() {
             ) : session ? (
               <CustomerWaitlist
                 onAppointmentConfirmed={handleWaitlistAppointmentConfirmed}
+                onEvaluateAppointment={handleEvaluateAppointment}
                 onUnreadCountChange={setUnreadNotificationCount}
                 token={session.token}
               />

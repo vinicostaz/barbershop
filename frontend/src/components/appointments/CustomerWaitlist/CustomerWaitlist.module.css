@@ -139,6 +139,15 @@
   gap: var(--space-4);
 }
 
+.notificationList {
+  max-height: clamp(28rem, 65vh, 44rem);
+  padding-right: var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--color-blue-300) transparent;
+  scrollbar-width: thin;
+}
+
 .queueCard {
   padding: var(--space-5, 1.25rem);
   background: var(--color-ivory-50);
@@ -153,7 +162,7 @@
 }
 
 .queueCardHeader,
-.notification > div {
+.notificationHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -257,6 +266,10 @@
   background: var(--color-ivory-50);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .unreadNotification {
@@ -264,7 +277,16 @@
   border-color: var(--color-blue-300);
 }
 
-.notification > div > span {
+.clickableNotification {
+  cursor: pointer;
+}
+
+.clickableNotification:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.notificationHeader > span {
   color: var(--color-primary);
   font-size: var(--font-size-xs);
   font-weight: 800;
@@ -283,8 +305,15 @@
   line-height: 1.65;
 }
 
-.readButton {
+.notificationActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin-top: var(--space-3);
+}
+
+.readButton,
+.evaluateButton {
   padding: 0;
   color: var(--color-primary);
   background: transparent;
@@ -295,7 +324,12 @@
   cursor: pointer;
 }
 
-.readButton:hover {
+.evaluateButton {
+  color: var(--color-accent-dark, #68442f);
+}
+
+.readButton:hover,
+.evaluateButton:hover {
   text-decoration: underline;
 }
 
@@ -438,7 +472,7 @@
   }
 
   .queueCardHeader,
-  .notification > div {
+  .notificationHeader {
     align-items: flex-start;
   }
 }

@@ -25,6 +25,7 @@ import styles from './CustomerWaitlist.module.css'
 
 type CustomerWaitlistProps = {
   onAppointmentConfirmed: (appointmentId: string) => void
+  onEvaluateAppointment: (appointmentId: string) => void
   onUnreadCountChange?: (count: number) => void
   token: string
 }
@@ -155,6 +156,7 @@ function QueueCard({
 
 export function CustomerWaitlist({
   onAppointmentConfirmed,
+  onEvaluateAppointment,
   onUnreadCountChange,
   token,
 }: CustomerWaitlistProps) {
@@ -375,6 +377,13 @@ export function CustomerWaitlist({
     }
   }
 
+  async function handleEvaluate(notification: Notification) {
+    if (!notification.agendamentoId) return
+
+    await handleRead(notification)
+    onEvaluateAppointment(notification.agendamentoId)
+  }
+
   if (isLoading) {
     return (
       <section className={styles.workspace}>
@@ -482,10 +491,11 @@ export function CustomerWaitlist({
               <div className={styles.notificationList}>
                 {notifications.map((notification) => (
                   <article
-                    className={`${styles.notification} ${notification.lida ? '' : styles.unreadNotification}`}
+                    className={`${styles.notification} ${notification.lida ? '' : `${styles.unreadNotification} ${styles.clickableNotification}`}`}
                     key={notification.id}
+                    onClick={() => void handleRead(notification)}
                   >
-                    <div>
+                    <div className={styles.notificationHeader}>
                       <span>{notification.lida ? 'Lido' : 'Novo aviso'}</span>
                       <time dateTime={notification.criadoEm}>
                         {notificationDateFormatter.format(
@@ -494,15 +504,33 @@ export function CustomerWaitlist({
                       </time>
                     </div>
                     <p>{notification.mensagem}</p>
-                    {!notification.lida && (
-                      <button
-                        className={styles.readButton}
-                        onClick={() => void handleRead(notification)}
-                        type="button"
-                      >
-                        Marcar como lido
-                      </button>
-                    )}
+                    <div className={styles.notificationActions}>
+                      {notification.tipo === 'ATENDIMENTO_CONCLUIDO' &&
+                        notification.agendamentoId && (
+                          <button
+                            className={styles.evaluateButton}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              void handleEvaluate(notification)
+                            }}
+                            type="button"
+                          >
+                            Avaliar atendimento
+                          </button>
+                        )}
+                      {!notification.lida && (
+                        <button
+                          className={styles.readButton}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            void handleRead(notification)
+                          }}
+                          type="button"
+                        >
+                          Marcar como lido
+                        </button>
+                      )}
+                    </div>
                   </article>
                 ))}
               </div>
