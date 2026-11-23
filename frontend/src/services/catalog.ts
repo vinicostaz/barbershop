@@ -20,6 +20,11 @@ type ApiProfessional = {
   nome: string
 }
 
+type ApiProfessionalReviews = {
+  media: number | null
+  total: number
+}
+
 export type Service = {
   descricao: string
   duracaoMin: number
@@ -33,6 +38,8 @@ export type Professional = {
   id: string
   initials: string
   name: string
+  rating: number | null
+  reviewCount: number
   specialties: string[]
 }
 
@@ -57,7 +64,10 @@ function normalizeService(service: ApiService): Service {
   }
 }
 
-function normalizeProfessional(professional: ApiProfessional): Professional {
+function normalizeProfessional(
+  professional: ApiProfessional,
+  reviews?: ApiProfessionalReviews,
+): Professional {
   const specialties = (professional.especialidades ?? [])
     .map((item) => item.especialidade?.nome?.trim())
     .filter((specialty): specialty is string => Boolean(specialty))
@@ -70,6 +80,8 @@ function normalizeProfessional(professional: ApiProfessional): Professional {
     id: professional.id,
     initials: createInitials(professional.nome),
     name: professional.nome,
+    rating: reviews?.media ?? null,
+    reviewCount: reviews?.total ?? 0,
     specialties,
   }
 }
@@ -80,7 +92,18 @@ export const catalogService = {
       signal,
     })
 
-    return professionals.map(normalizeProfessional)
+    const reviews = await Promise.all(
+      professionals.map((professional) =>
+        apiRequest<ApiProfessionalReviews>(
+          `/avaliacoes/barbeiros/${professional.id}`,
+          { signal },
+        ),
+      ),
+    )
+
+    return professionals.map((professional, index) =>
+      normalizeProfessional(professional, reviews[index]),
+    )
   },
 
   async listServices(signal?: AbortSignal) {

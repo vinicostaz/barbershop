@@ -141,6 +141,8 @@ export function ProfessionalsPage() {
                   initials={professional.initials}
                   key={professional.id}
                   name={professional.name}
+                  rating={professional.rating}
+                  reviewCount={professional.reviewCount}
                   specialties={professional.specialties}
                 />
               ))}

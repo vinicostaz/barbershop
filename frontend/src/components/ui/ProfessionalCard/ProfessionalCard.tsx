@@ -8,6 +8,8 @@ type ProfessionalCardProps = {
   index: number
   initials: string
   name: string
+  rating: number | null
+  reviewCount: number
   specialties: string[]
 }
 
@@ -18,6 +20,8 @@ export function ProfessionalCard({
   index,
   initials,
   name,
+  rating,
+  reviewCount,
   specialties,
 }: ProfessionalCardProps) {
   const titleId = `profissional-${id}`
@@ -36,6 +40,22 @@ export function ProfessionalCard({
       <div className={styles.content}>
         <span className={styles.role}>Barbeiro especialista</span>
         <h3 id={titleId}>{name}</h3>
+        <div
+          aria-label={
+            rating === null
+              ? 'Profissional ainda sem avaliações'
+              : `Nota ${rating.toFixed(1)} de 5, baseada em ${reviewCount} avaliações`
+          }
+          className={styles.rating}
+        >
+          <span aria-hidden="true">★</span>
+          <strong>{rating === null ? 'Novo' : rating.toFixed(1)}</strong>
+          <small>
+            {reviewCount === 0
+              ? 'Sem avaliações'
+              : `${reviewCount} ${reviewCount === 1 ? 'avaliação' : 'avaliações'}`}
+          </small>
+        </div>
         <p>{description}</p>
       </div>
 

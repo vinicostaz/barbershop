@@ -72,6 +72,29 @@
   line-height: 1.08;
 }
 
+.rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.rating > span {
+  color: #b77822;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.rating strong {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.rating small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
 .content p {
   margin: var(--space-4) 0 0;
   color: var(--color-text-muted);
