@@ -139,6 +139,38 @@
   gap: var(--space-4);
 }
 
+.markAllButton,
+.loadMoreButton {
+  color: var(--color-primary);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.markAllButton {
+  margin: calc(var(--space-4) * -1) 0 var(--space-4);
+}
+
+.loadMoreButton {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.markAllButton:hover:not(:disabled),
+.loadMoreButton:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.markAllButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .notificationList {
   max-height: clamp(28rem, 65vh, 44rem);
   padding-right: var(--space-2);

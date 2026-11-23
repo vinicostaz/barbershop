@@ -7,10 +7,7 @@
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: var(--space-10);
+  display: block;
 }
 
 .hero h1 {
@@ -31,16 +28,6 @@
   line-height: 1.7;
 }
 
-.pointsCard {
-  min-width: 13rem;
-  padding: var(--space-6);
-  color: var(--color-text-on-dark);
-  background: var(--color-navy-950);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-.pointsCard span,
 .summary > span,
 .formCard header > span {
   color: var(--color-blue-300);
@@ -48,21 +35,6 @@
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-}
-
-.pointsCard strong {
-  display: block;
-  margin-top: var(--space-2);
-  font-family: var(--font-display);
-  font-size: 3.2rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.pointsCard p {
-  margin: var(--space-2) 0 0;
-  color: var(--color-text-on-dark-muted);
-  font-size: var(--font-size-sm);
 }
 
 .layout {
@@ -201,9 +173,6 @@
     grid-template-columns: 1fr;
   }
 
-  .pointsCard {
-    max-width: 18rem;
-  }
 }
 
 @media (max-width: 36rem) {

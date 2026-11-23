@@ -19,7 +19,6 @@ export type UserProfile = {
   email: string
   id: string
   nome: string
-  pontosFidelidade: number
   role: UserRole
   telefone: string | null
 }

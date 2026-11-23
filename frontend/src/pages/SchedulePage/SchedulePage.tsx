@@ -251,7 +251,7 @@ function ScheduleCard({
               <div className={styles.completionConfirmation}>
                 <p>
                   {appointment.status === 'CONCLUIDO'
-                    ? 'Confirma que este atendimento não aconteceu? O ponto de fidelidade será removido.'
+                    ? 'Confirma que este atendimento não aconteceu? A conclusão será corrigida.'
                     : 'Confirma o cancelamento deste atendimento?'}
                 </p>
                 {cancellationError && (

@@ -138,13 +138,6 @@ export function ProfilePage() {
               Consulte suas informações e mantenha seus dados de contato atualizados.
             </p>
           </div>
-          {profile && (
-            <div className={styles.pointsCard}>
-              <span>Fidelidade</span>
-              <strong>{profile.pontosFidelidade}</strong>
-              <p>{profile.pontosFidelidade === 1 ? 'ponto acumulado' : 'pontos acumulados'}</p>
-            </div>
-          )}
         </header>
 
         {isLoading && (
@@ -180,10 +173,6 @@ export function ProfilePage() {
                 <div>
                   <dt>Cliente desde</dt>
                   <dd>{createdAtFormatter.format(new Date(profile.criadoEm))}</dd>
-                </div>
-                <div>
-                  <dt>Pontos de fidelidade</dt>
-                  <dd>{profile.pontosFidelidade}</dd>
                 </div>
               </dl>
             </aside>

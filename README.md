@@ -71,3 +71,7 @@ npm install
 cp .env.example .env
 npm run dev
 ```
+
+## Integração contínua
+
+O workflow `.github/workflows/ci.yml` valida automaticamente backend e frontend em pull requests e pushes para `develop` e `main`.

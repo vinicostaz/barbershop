@@ -52,6 +52,8 @@ const statusLabels: Record<WaitlistStatus, string> = {
   NOTIFICADO: 'Horário liberado',
 }
 
+const NOTIFICATIONS_PER_PAGE = 20
+
 function localDateId(date = new Date()) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -162,6 +164,9 @@ export function CustomerWaitlist({
 }: CustomerWaitlistProps) {
   const [entries, setEntries] = useState<WaitlistEntry[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [visibleNotificationCount, setVisibleNotificationCount] = useState(
+    NOTIFICATIONS_PER_PAGE,
+  )
   const [services, setServices] = useState<Service[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [selectedServiceId, setSelectedServiceId] = useState('')
@@ -177,6 +182,7 @@ export function CustomerWaitlist({
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [actionId, setActionId] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -184,6 +190,10 @@ export function CustomerWaitlist({
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.lida).length,
     [notifications],
+  )
+  const visibleNotifications = useMemo(
+    () => notifications.slice(0, visibleNotificationCount),
+    [notifications, visibleNotificationCount],
   )
   const activeEntries = useMemo(
     () =>
@@ -222,6 +232,7 @@ export function CustomerWaitlist({
 
         setEntries(queueResult)
         setNotifications(notificationResult)
+        setVisibleNotificationCount(NOTIFICATIONS_PER_PAGE)
         setServices(serviceResult)
         setProfessionals(professionalResult)
       } catch (requestError) {
@@ -384,6 +395,27 @@ export function CustomerWaitlist({
     onEvaluateAppointment(notification.agendamentoId)
   }
 
+  async function handleMarkAllRead() {
+    setError('')
+    setIsMarkingAllRead(true)
+
+    try {
+      await waitlistService.markAllNotificationsRead(token)
+      setNotifications((current) =>
+        current.map((notification) => ({ ...notification, lida: true })),
+      )
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          'Não foi possível marcar os avisos como lidos.',
+        ),
+      )
+    } finally {
+      setIsMarkingAllRead(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <section className={styles.workspace}>
@@ -483,13 +515,24 @@ export function CustomerWaitlist({
               )}
             </div>
 
+            {unreadCount > 0 && (
+              <button
+                className={styles.markAllButton}
+                disabled={isMarkingAllRead}
+                onClick={() => void handleMarkAllRead()}
+                type="button"
+              >
+                {isMarkingAllRead ? 'Marcando...' : 'Marcar todas como lidas'}
+              </button>
+            )}
+
             {notifications.length === 0 ? (
               <div className={styles.emptyState}>
                 Nenhum aviso por enquanto. Quando um horário abrir, ele aparecerá aqui.
               </div>
             ) : (
               <div className={styles.notificationList}>
-                {notifications.map((notification) => (
+                {visibleNotifications.map((notification) => (
                   <article
                     className={`${styles.notification} ${notification.lida ? '' : `${styles.unreadNotification} ${styles.clickableNotification}`}`}
                     key={notification.id}
@@ -533,6 +576,19 @@ export function CustomerWaitlist({
                     </div>
                   </article>
                 ))}
+                {visibleNotificationCount < notifications.length && (
+                  <button
+                    className={styles.loadMoreButton}
+                    onClick={() =>
+                      setVisibleNotificationCount((current) =>
+                        current + NOTIFICATIONS_PER_PAGE,
+                      )
+                    }
+                    type="button"
+                  >
+                    Carregar mais avisos
+                  </button>
+                )}
               </div>
             )}
           </section>
