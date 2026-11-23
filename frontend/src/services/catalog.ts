@@ -21,6 +21,14 @@ type ApiProfessional = {
 }
 
 type ApiProfessionalReviews = {
+  avaliacoes: Array<{
+    cliente: string
+    comentario: string | null
+    criadoEm: string
+    id: string
+    nota: number
+    servico: string
+  }>
   media: number | null
   total: number
 }
@@ -40,7 +48,17 @@ export type Professional = {
   name: string
   rating: number | null
   reviewCount: number
+  reviews: ProfessionalReview[]
   specialties: string[]
+}
+
+export type ProfessionalReview = {
+  client: string
+  comment: string | null
+  createdAt: string
+  id: string
+  rating: number
+  service: string
 }
 
 function createInitials(name: string) {
@@ -82,6 +100,14 @@ function normalizeProfessional(
     name: professional.nome,
     rating: reviews?.media ?? null,
     reviewCount: reviews?.total ?? 0,
+    reviews: (reviews?.avaliacoes ?? []).map((review) => ({
+      client: review.cliente,
+      comment: review.comentario,
+      createdAt: review.criadoEm,
+      id: review.id,
+      rating: review.nota,
+      service: review.servico,
+    })),
     specialties,
   }
 }
