@@ -6,6 +6,7 @@ const includeCompleto = {
   cliente: usuarioResumo,
   barbeiro: usuarioResumo,
   servico: true,
+  avaliacao: { select: { id: true, nota: true, comentario: true, criadoEm: true } },
 } as const;
 
 const mensagemConflitoCliente =
@@ -153,6 +154,14 @@ export const agendamentosRepository = {
     });
   },
 
+  findConfirmadosEncerrados(agora: Date) {
+    return db.agendamento.findMany({
+      where: { status: "CONFIRMADO", horaFim: { lte: agora } },
+      include: includeCompleto,
+      orderBy: { horaFim: "asc" },
+    });
+  },
+
   // Marca como CONCLUIDO e soma os pontos do cliente na MESMA transação.
   // O update só acontece se o agendamento ainda estiver CONFIRMADO: se duas
   // requisições chegarem juntas, só a primeira conclui e o ponto não é dado em dobro.
@@ -199,6 +208,42 @@ export const agendamentosRepository = {
         });
       }
       return tx.agendamento.findUniqueOrThrow({ where: { id } });
+    });
+  },
+
+  // Permite à barbearia corrigir um atendimento concluído automaticamente que
+  // não aconteceu. A correção só é aceita enquanto o cliente ainda não avaliou.
+  // O ponto e o convite de avaliação são revertidos na mesma transação.
+  cancelarConcluido(
+    id: string,
+    clienteId: string,
+    pontos: number,
+    mensagem: string
+  ) {
+    return db.$transaction(async (tx) => {
+      const { count } = await tx.agendamento.updateMany({
+        where: { id, status: "CONCLUIDO", avaliacao: { is: null } },
+        data: { status: "CANCELADO" },
+      });
+      if (count === 0) return null;
+
+      await tx.usuario.updateMany({
+        where: { id: clienteId, pontosFidelidade: { gte: pontos } },
+        data: { pontosFidelidade: { decrement: pontos } },
+      });
+      await tx.notificacao.deleteMany({
+        where: { agendamentoId: id, tipo: "ATENDIMENTO_CONCLUIDO" },
+      });
+      await tx.notificacao.create({
+        data: {
+          usuarioId: clienteId,
+          tipo: "AGENDAMENTO_CANCELADO",
+          mensagem,
+          agendamentoId: id,
+        },
+      });
+
+      return tx.agendamento.findUniqueOrThrow({ where: { id }, include: includeCompleto });
     });
   },
 

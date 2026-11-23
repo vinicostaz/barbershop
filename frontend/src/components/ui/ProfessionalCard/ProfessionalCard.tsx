@@ -1,5 +1,10 @@
 import { ActionLink } from '../ActionLink/ActionLink'
+import type { ProfessionalReview } from '../../../services/catalog'
 import styles from './ProfessionalCard.module.css'
+
+const reviewDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'medium',
+})
 
 type ProfessionalCardProps = {
   canSchedule: boolean
@@ -8,6 +13,9 @@ type ProfessionalCardProps = {
   index: number
   initials: string
   name: string
+  rating: number | null
+  reviewCount: number
+  reviews: ProfessionalReview[]
   specialties: string[]
 }
 
@@ -18,6 +26,9 @@ export function ProfessionalCard({
   index,
   initials,
   name,
+  rating,
+  reviewCount,
+  reviews,
   specialties,
 }: ProfessionalCardProps) {
   const titleId = `profissional-${id}`
@@ -36,6 +47,22 @@ export function ProfessionalCard({
       <div className={styles.content}>
         <span className={styles.role}>Barbeiro especialista</span>
         <h3 id={titleId}>{name}</h3>
+        <div
+          aria-label={
+            rating === null
+              ? 'Profissional ainda sem avaliações'
+              : `Nota ${rating.toFixed(1)} de 5, baseada em ${reviewCount} avaliações`
+          }
+          className={styles.rating}
+        >
+          <span aria-hidden="true">★</span>
+          <strong>{rating === null ? 'Novo' : rating.toFixed(1)}</strong>
+          <small>
+            {reviewCount === 0
+              ? 'Sem avaliações'
+              : `${reviewCount} ${reviewCount === 1 ? 'avaliação' : 'avaliações'}`}
+          </small>
+        </div>
         <p>{description}</p>
       </div>
 
@@ -47,6 +74,41 @@ export function ProfessionalCard({
           <li key={specialty}>{specialty}</li>
         ))}
       </ul>
+
+      {reviews.length > 0 && (
+        <details className={styles.reviews}>
+          <summary>
+            <span>Ver avaliações</span>
+            <small>{reviewCount}</small>
+          </summary>
+
+          <ul aria-label={`Avaliações recebidas por ${name}`}>
+            {reviews.map((review) => (
+              <li key={review.id}>
+                <header>
+                  <div>
+                    <strong>{review.client}</strong>
+                    <span>{review.service}</span>
+                  </div>
+                  <time dateTime={review.createdAt}>
+                    {reviewDateFormatter.format(new Date(review.createdAt))}
+                  </time>
+                </header>
+                <p
+                  aria-label={`${review.rating} de 5 estrelas`}
+                  className={styles.reviewStars}
+                >
+                  {'★'.repeat(review.rating)}
+                  <span aria-hidden="true">{'★'.repeat(5 - review.rating)}</span>
+                </p>
+                <blockquote>
+                  {review.comment ?? 'O cliente não deixou um comentário.'}
+                </blockquote>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <footer className={styles.footer}>
         {canSchedule ? (

@@ -6,7 +6,15 @@ type ApiUserSummary = {
   nome: string
 }
 
+export type AppointmentEvaluation = {
+  comentario: string | null
+  criadoEm: string
+  id: string
+  nota: number
+}
+
 type ApiAppointment = {
+  avaliacao?: AppointmentEvaluation | null
   barbeiro?: ApiUserSummary
   cliente?: ApiUserSummary
   data: string
@@ -18,6 +26,7 @@ type ApiAppointment = {
 }
 
 export type Appointment = {
+  avaliacao?: AppointmentEvaluation | null
   barbeiro?: ApiUserSummary
   cliente?: ApiUserSummary
   data: string
@@ -103,6 +112,15 @@ export const appointmentsService = {
         body: JSON.stringify(input),
         method: 'POST',
       }),
+    )
+
+    return normalizeAppointment(appointment)
+  },
+
+  async complete(id: string, token: string) {
+    const appointment = await apiRequest<ApiAppointment>(
+      `/agendamentos/${id}/concluir`,
+      withAuthorization(token, { method: 'PATCH' }),
     )
 
     return normalizeAppointment(appointment)

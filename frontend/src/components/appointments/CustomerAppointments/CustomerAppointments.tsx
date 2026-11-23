@@ -8,10 +8,12 @@ import {
 } from '../../../services/appointments'
 import { ApiError } from '../../../services/api'
 import { catalogService } from '../../../services/catalog'
+import { evaluationsService } from '../../../services/evaluations'
 import { BookingDatePicker } from '../BookingDatePicker/BookingDatePicker'
 import styles from './CustomerAppointments.module.css'
 
 type CustomerAppointmentsProps = {
+  evaluationAppointmentId?: string
   highlightedAppointmentId?: string
   notice?: string
   onCreateAppointment: () => void
@@ -317,7 +319,119 @@ function RescheduleForm({
   )
 }
 
+function EvaluationForm({
+  appointment,
+  onCancel,
+  onSuccess,
+  token,
+}: {
+  appointment: Appointment
+  onCancel: () => void
+  onSuccess: () => void
+  token: string
+}) {
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (rating === 0 || isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const normalizedComment = comment.trim()
+
+      await evaluationsService.create(
+        {
+          agendamentoId: appointment.id,
+          comentario: normalizedComment || undefined,
+          nota: rating,
+        },
+        token,
+      )
+      onSuccess()
+    } catch (requestError) {
+      setSubmitError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível enviar sua avaliação.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <form
+      className={styles.evaluationForm}
+      onSubmit={(event) => void handleSubmit(event)}
+    >
+      <header>
+        <span>Avaliar atendimento</span>
+        <h4>Como foi sua experiência?</h4>
+        <p>Sua avaliação ajuda a melhorar os próximos atendimentos.</p>
+      </header>
+
+      <fieldset>
+        <legend>Nota</legend>
+        <div className={styles.ratingOptions}>
+          {[1, 2, 3, 4, 5].map((value) => (
+            <button
+              aria-label={`${value} ${value === 1 ? 'estrela' : 'estrelas'}`}
+              aria-pressed={rating === value}
+              className={value <= rating ? styles.selectedStar : ''}
+              key={value}
+              onClick={() => {
+                setRating(value)
+                setSubmitError('')
+              }}
+              type="button"
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        <p className={styles.ratingHint}>
+          {rating === 0 ? 'Selecione de 1 a 5 estrelas.' : `${rating} de 5 estrelas`}
+        </p>
+      </fieldset>
+
+      <label className={styles.commentField}>
+        <span>Comentário <small>(opcional)</small></span>
+        <textarea
+          maxLength={500}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder="Conte o que achou do atendimento"
+          rows={4}
+          value={comment}
+        />
+        <small>{comment.length}/500</small>
+      </label>
+
+      {submitError && (
+        <p className={styles.actionError} role="alert">
+          {submitError}
+        </p>
+      )}
+
+      <div className={styles.formActions}>
+        <Button disabled={isSubmitting} onClick={onCancel} size="small" variant="ghost">
+          Agora não
+        </Button>
+        <Button disabled={rating === 0 || isSubmitting} size="small" type="submit">
+          {isSubmitting ? 'Enviando...' : 'Enviar avaliação'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 export function CustomerAppointments({
+  evaluationAppointmentId,
   highlightedAppointmentId,
   notice,
   onCreateAppointment,
@@ -326,15 +440,29 @@ export function CustomerAppointments({
   token,
 }: CustomerAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [viewMode, setViewMode] = useState<ViewMode>('upcoming')
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    evaluationAppointmentId ? 'history' : 'upcoming',
+  )
   const [cancelConfirmationId, setCancelConfirmationId] = useState('')
   const [rescheduleId, setRescheduleId] = useState('')
+  const [evaluationId, setEvaluationId] = useState(
+    evaluationAppointmentId ?? '',
+  )
   const [busyAppointmentId, setBusyAppointmentId] = useState('')
   const [feedback, setFeedback] = useState(notice ?? '')
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [internalReloadKey, setInternalReloadKey] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setInternalReloadKey((key) => key + 1),
+      60_000,
+    )
+
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -389,9 +517,22 @@ export function CustomerAppointments({
 
   const visibleAppointments = viewMode === 'upcoming' ? upcoming : history
 
+  useEffect(() => {
+    if (!evaluationAppointmentId || isLoading || viewMode !== 'history') return
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`agendamento-${evaluationAppointmentId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [evaluationAppointmentId, isLoading, viewMode])
+
   function refreshAppointments(message: string) {
     setCancelConfirmationId('')
     setRescheduleId('')
+    setEvaluationId('')
     setActionError('')
     setFeedback(message)
     setInternalReloadKey((key) => key + 1)
@@ -444,6 +585,7 @@ export function CustomerAppointments({
               setActionError('')
               setCancelConfirmationId('')
               setRescheduleId('')
+              setEvaluationId('')
             }}
             type="button"
           >
@@ -457,6 +599,7 @@ export function CustomerAppointments({
               setActionError('')
               setCancelConfirmationId('')
               setRescheduleId('')
+              setEvaluationId('')
             }}
             type="button"
           >
@@ -503,6 +646,8 @@ export function CustomerAppointments({
             {visibleAppointments.map((appointment) => {
               const isCancelling = cancelConfirmationId === appointment.id
               const isRescheduling = rescheduleId === appointment.id
+              const isEvaluating =
+                evaluationId === appointment.id && !appointment.avaliacao
               const isBusy = busyAppointmentId === appointment.id
 
               return (
@@ -512,6 +657,7 @@ export function CustomerAppointments({
                       ? styles.highlightedCard
                       : ''
                   }`}
+                  id={`agendamento-${appointment.id}`}
                   key={appointment.id}
                 >
                   <div className={styles.cardTopline}>
@@ -540,6 +686,47 @@ export function CustomerAppointments({
                       <dd>{appointment.servico.duracaoMin} minutos</dd>
                     </div>
                   </dl>
+
+                  {viewMode === 'history' && appointment.avaliacao && (
+                    <section
+                      aria-label="Sua avaliação deste atendimento"
+                      className={styles.savedEvaluation}
+                    >
+                      <div>
+                        <strong>Sua avaliação</strong>
+                        <span>{appointment.avaliacao.nota}/5</span>
+                      </div>
+                      <p
+                        aria-label={`${appointment.avaliacao.nota} de 5 estrelas`}
+                        className={styles.savedStars}
+                      >
+                        {'★'.repeat(appointment.avaliacao.nota)}
+                        <span>{'★'.repeat(5 - appointment.avaliacao.nota)}</span>
+                      </p>
+                      {appointment.avaliacao.comentario && (
+                        <blockquote>{appointment.avaliacao.comentario}</blockquote>
+                      )}
+                    </section>
+                  )}
+
+                  {viewMode === 'history' &&
+                    appointment.status === 'CONCLUIDO' &&
+                    !appointment.avaliacao &&
+                    !isEvaluating && (
+                      <div className={styles.evaluationAction}>
+                        <Button
+                          onClick={() => {
+                            setEvaluationId(appointment.id)
+                            setActionError('')
+                            setFeedback('')
+                          }}
+                          size="small"
+                          variant="ghost"
+                        >
+                          Avaliar atendimento
+                        </Button>
+                      </div>
+                    )}
 
                   {viewMode === 'upcoming' && (
                     <div className={styles.cardActions}>
@@ -621,6 +808,17 @@ export function CustomerAppointments({
                       }}
                       onSuccess={() =>
                         refreshAppointments('Agendamento reagendado com sucesso.')
+                      }
+                      token={token}
+                    />
+                  )}
+
+                  {isEvaluating && (
+                    <EvaluationForm
+                      appointment={appointment}
+                      onCancel={() => setEvaluationId('')}
+                      onSuccess={() =>
+                        refreshAppointments('Avaliação enviada com sucesso.')
                       }
                       token={token}
                     />

@@ -4,7 +4,8 @@
   background: var(--color-ivory-100);
 }
 
-.rescheduleForm header > span {
+.rescheduleForm header > span,
+.evaluationForm header > span {
   color: var(--color-primary);
   font-size: var(--font-size-xs);
   font-weight: 800;
@@ -276,7 +277,62 @@
   border-radius: var(--radius-lg);
 }
 
-.rescheduleForm header h4 {
+.evaluationAction {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5, 1.25rem);
+  border-top: 1px solid var(--color-border);
+}
+
+.savedEvaluation {
+  margin-top: var(--space-6);
+  padding: var(--space-5, 1.25rem);
+  background: var(--color-ivory-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.savedEvaluation > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.savedEvaluation > div strong,
+.savedEvaluation > div span {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+
+.savedStars {
+  margin: var(--space-2) 0 0;
+  color: #b77822;
+  font-size: 1.35rem;
+  letter-spacing: 0.12em;
+}
+
+.savedStars span {
+  color: var(--color-border);
+}
+
+.savedEvaluation blockquote {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.evaluationForm {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  background: var(--color-ivory-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.rescheduleForm header h4,
+.evaluationForm header h4 {
   margin: var(--space-2) 0 0;
   color: var(--color-text);
   font-family: var(--font-display);
@@ -284,24 +340,107 @@
   font-weight: 400;
 }
 
-.rescheduleForm header p {
+.rescheduleForm header p,
+.evaluationForm header p {
   margin: var(--space-2) 0 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
-.rescheduleForm fieldset {
+.rescheduleForm fieldset,
+.evaluationForm fieldset {
   min-width: 0;
   margin: var(--space-6) 0 0;
   padding: 0;
   border: 0;
 }
 
-.rescheduleForm legend {
+.rescheduleForm legend,
+.evaluationForm legend {
   margin-bottom: var(--space-3);
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 800;
+}
+
+.ratingOptions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ratingOptions button {
+  width: 2.9rem;
+  min-height: 2.9rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--color-border);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.ratingOptions button:hover,
+.ratingOptions .selectedStar {
+  color: #b77822;
+  background: #fff8ea;
+  border-color: #ddb36f;
+  transform: translateY(-1px);
+}
+
+.ratingHint {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.commentField {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-5, 1.25rem);
+}
+
+.commentField > span {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+
+.commentField > span small {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.commentField textarea {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+  padding: var(--space-3);
+  color: var(--color-text);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.commentField textarea:focus {
+  border-color: var(--color-primary);
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.commentField > small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: right;
 }
 
 .timeOptions {
@@ -390,7 +529,8 @@
   }
 
   .card,
-  .rescheduleForm {
+  .rescheduleForm,
+  .evaluationForm {
     padding: var(--space-5, 1.25rem);
     border-radius: var(--radius-lg);
   }
@@ -400,6 +540,7 @@
   }
 
   .cardActions > button,
+  .evaluationAction > button,
   .cancelConfirmation > div button,
   .formActions button {
     width: 100%;

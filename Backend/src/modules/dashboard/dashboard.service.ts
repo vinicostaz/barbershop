@@ -1,6 +1,7 @@
 import type { AuthPayload } from "../../middlewares/authMiddleware.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { agoraComoHoraDeParede } from "../agendamentos/agendamentos.tempo.js";
+import { agendamentosService } from "../agendamentos/agendamentos.service.js";
 import { dashboardRepository } from "./dashboard.repository.js";
 
 type Status = "CONFIRMADO" | "CONCLUIDO" | "CANCELADO" | "REAGENDADO";
@@ -209,6 +210,8 @@ export const dashboardService = {
     if (usuario.role !== "ADMINISTRADOR") {
       throw new AppError("Apenas administradores podem acessar o dashboard.", 403);
     }
+
+    await agendamentosService.concluirEncerrados();
 
     const datasComAgendamentos = await dashboardRepository.buscarDatasComAgendamentos();
     const mesesDisponiveis = [

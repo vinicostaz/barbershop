@@ -93,17 +93,54 @@ function appointmentTime(value: string) {
   return `${hour}:${minute}`
 }
 
+function appointmentWallClockTimestamp(value: string) {
+  const date = new Date(value)
+
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+  ).getTime()
+}
+
+function canCompleteAppointment(appointment: Appointment) {
+  return (
+    appointment.status === 'CONFIRMADO' &&
+    appointmentWallClockTimestamp(appointment.horaFim) <= Date.now()
+  )
+}
+
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function ScheduleCard({
   appointment,
+  cancellationError,
+  completionError,
+  isCancelling,
+  isCompleting,
+  onCancel,
+  onComplete,
   showProfessional,
 }: {
   appointment: Appointment
+  cancellationError?: string
+  completionError?: string
+  isCancelling: boolean
+  isCompleting: boolean
+  onCancel: (appointment: Appointment) => Promise<void>
+  onComplete: (appointment: Appointment) => Promise<void>
   showProfessional: boolean
 }) {
+  const [isConfirmingCompletion, setIsConfirmingCompletion] = useState(false)
+  const [isConfirmingCancellation, setIsConfirmingCancellation] = useState(false)
+  const canComplete = canCompleteAppointment(appointment)
+  const canCancel =
+    appointment.status === 'CONFIRMADO' || appointment.status === 'CONCLUIDO'
+
   return (
     <article className={styles.appointmentCard}>
       <div className={styles.cardTime}>
@@ -137,6 +174,100 @@ function ScheduleCard({
             </div>
           )}
         </dl>
+
+        {(canComplete || canCancel) && (
+          <div className={styles.completionArea}>
+            {!isConfirmingCompletion && !isConfirmingCancellation && (
+              <div className={styles.appointmentActions}>
+                {canComplete && (
+                  <Button
+                    disabled={isCompleting || isCancelling}
+                    onClick={() => setIsConfirmingCompletion(true)}
+                    size="small"
+                  >
+                    Concluir atendimento
+                  </Button>
+                )}
+                {canCancel && (
+                  <Button
+                    className={styles.cancelAppointmentButton}
+                    disabled={isCompleting || isCancelling}
+                    onClick={() => setIsConfirmingCancellation(true)}
+                    size="small"
+                    variant="ghost"
+                  >
+                    {appointment.status === 'CONCLUIDO'
+                      ? 'Corrigir como cancelado'
+                      : 'Cancelar atendimento'}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {isConfirmingCompletion && (
+              <div className={styles.completionConfirmation}>
+                <p>Confirma que este atendimento foi realizado?</p>
+                {completionError && (
+                  <p className={styles.completionError} role="alert">
+                    {completionError}
+                  </p>
+                )}
+                <div>
+                  <Button
+                    disabled={isCompleting}
+                    onClick={() => setIsConfirmingCompletion(false)}
+                    size="small"
+                    variant="ghost"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    disabled={isCompleting}
+                    onClick={() => void onComplete(appointment)}
+                    size="small"
+                    variant="secondary"
+                  >
+                    {isCompleting ? 'Concluindo...' : 'Confirmar conclusão'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isConfirmingCancellation && (
+              <div className={styles.completionConfirmation}>
+                <p>
+                  {appointment.status === 'CONCLUIDO'
+                    ? 'Confirma que este atendimento não aconteceu? O ponto de fidelidade será removido.'
+                    : 'Confirma o cancelamento deste atendimento?'}
+                </p>
+                {cancellationError && (
+                  <p className={styles.completionError} role="alert">
+                    {cancellationError}
+                  </p>
+                )}
+                <div>
+                  <Button
+                    disabled={isCancelling}
+                    onClick={() => setIsConfirmingCancellation(false)}
+                    size="small"
+                    variant="ghost"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    className={styles.confirmCancellationButton}
+                    disabled={isCancelling}
+                    onClick={() => void onCancel(appointment)}
+                    size="small"
+                    variant="secondary"
+                  >
+                    {isCancelling ? 'Cancelando...' : 'Confirmar cancelamento'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )
@@ -155,9 +286,25 @@ export function SchedulePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [completingId, setCompletingId] = useState('')
+  const [cancellingId, setCancellingId] = useState('')
+  const [completionError, setCompletionError] = useState('')
+  const [completionErrorId, setCompletionErrorId] = useState('')
+  const [cancellationError, setCancellationError] = useState('')
+  const [cancellationErrorId, setCancellationErrorId] = useState('')
+  const [actionFeedback, setActionFeedback] = useState('')
 
   const isAdministrator = session?.usuario.role === 'ADMINISTRADOR'
   const token = session?.token
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setReloadKey((key) => key + 1),
+      60_000,
+    )
+
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     if (!token) return
@@ -281,6 +428,58 @@ export function SchedulePage() {
     setSelectedDate(today)
   }
 
+  async function completeAppointment(appointment: Appointment) {
+    if (!token || completingId) return
+
+    setCompletingId(appointment.id)
+    setCompletionError('')
+    setCompletionErrorId('')
+    setActionFeedback('')
+
+    try {
+      await appointmentsService.complete(appointment.id, token)
+      setActionFeedback(
+        `Atendimento de ${appointment.cliente?.nome ?? 'cliente'} concluído com sucesso.`,
+      )
+      setReloadKey((key) => key + 1)
+    } catch (requestError) {
+      setCompletionError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível concluir o atendimento.',
+      )
+      setCompletionErrorId(appointment.id)
+    } finally {
+      setCompletingId('')
+    }
+  }
+
+  async function cancelAppointment(appointment: Appointment) {
+    if (!token || cancellingId) return
+
+    setCancellingId(appointment.id)
+    setCancellationError('')
+    setCancellationErrorId('')
+    setActionFeedback('')
+
+    try {
+      await appointmentsService.cancel(appointment.id, token)
+      setActionFeedback(
+        `Atendimento de ${appointment.cliente?.nome ?? 'cliente'} cancelado com sucesso.`,
+      )
+      setReloadKey((key) => key + 1)
+    } catch (requestError) {
+      setCancellationError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível cancelar o atendimento.',
+      )
+      setCancellationErrorId(appointment.id)
+    } finally {
+      setCancellingId('')
+    }
+  }
+
   return (
     <section className={styles.page} aria-labelledby="schedule-title">
       <Container>
@@ -352,6 +551,12 @@ export function SchedulePage() {
             Disponibilidade e bloqueios
           </button>
         </div>
+
+        {actionFeedback && (
+          <p className={styles.actionFeedback} role="status">
+            {actionFeedback}
+          </p>
+        )}
 
         {pageSection === 'agenda' ? (
           <>
@@ -567,7 +772,21 @@ export function SchedulePage() {
                   selectedDayAppointments.map((appointment) => (
                     <ScheduleCard
                       appointment={appointment}
+                      cancellationError={
+                        cancellationErrorId === appointment.id
+                          ? cancellationError
+                          : undefined
+                      }
+                      completionError={
+                        completionErrorId === appointment.id
+                          ? completionError
+                          : undefined
+                      }
+                      isCancelling={cancellingId === appointment.id}
+                      isCompleting={completingId === appointment.id}
                       key={appointment.id}
+                      onCancel={cancelAppointment}
+                      onComplete={completeAppointment}
                       showProfessional={isAdministrator}
                     />
                   ))
