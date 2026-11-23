@@ -82,6 +82,20 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function toMonthKey(date: Date) {
+  return toDateKey(date).slice(0, 7)
+}
+
+function parseMonthKey(monthKey: string) {
+  const [year, month] = monthKey.split('-').map(Number)
+  return new Date(year, month - 1, 1, 12)
+}
+
+function parseDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(year, month - 1, day, 12)
+}
+
 function appointmentDateKey(appointment: Appointment) {
   return appointment.horaInicio.slice(0, 10)
 }
@@ -353,6 +367,25 @@ export function SchedulePage() {
       .sort((first, second) => first.name.localeCompare(second.name, 'pt-BR'))
   }, [appointments])
 
+  const availableMonths = useMemo(() => {
+    const monthKeys = new Set(
+      appointments
+        .filter(
+          (appointment) =>
+            selectedProfessionalId === 'all' ||
+            appointment.barbeiro?.id === selectedProfessionalId,
+        )
+        .map((appointment) => appointmentDateKey(appointment).slice(0, 7)),
+    )
+
+    return [...monthKeys]
+      .sort((first, second) => second.localeCompare(first))
+      .map((value) => ({
+        label: capitalize(monthFormatter.format(parseMonthKey(value))),
+        value,
+      }))
+  }, [appointments, selectedProfessionalId])
+
   const weekStart = startOfWeek(selectedDate)
   const visibleDays = useMemo(
     () =>
@@ -398,6 +431,10 @@ export function SchedulePage() {
   )
 
   const selectedDateKey = toDateKey(selectedDate)
+  const selectedMonthKey = toMonthKey(selectedDate)
+  const hasSelectedMonth = availableMonths.some(
+    (month) => month.value === selectedMonthKey,
+  )
   const selectedDayAppointments = filteredAppointments.filter(
     (appointment) => appointmentDateKey(appointment) === selectedDateKey,
   )
@@ -426,6 +463,28 @@ export function SchedulePage() {
   function goToToday() {
     const today = startOfToday()
     setSelectedDate(today)
+  }
+
+  function selectHistoryMonth(monthKey: string) {
+    if (!monthKey) return
+
+    const firstAppointmentInMonth = appointments
+      .filter(
+        (appointment) =>
+          appointmentDateKey(appointment).startsWith(monthKey) &&
+          (selectedProfessionalId === 'all' ||
+            appointment.barbeiro?.id === selectedProfessionalId),
+      )
+      .sort((first, second) =>
+        appointmentDateKey(first).localeCompare(appointmentDateKey(second)),
+      )[0]
+
+    setViewMode('month')
+    setSelectedDate(
+      firstAppointmentInMonth
+        ? parseDateKey(appointmentDateKey(firstAppointmentInMonth))
+        : parseMonthKey(monthKey),
+    )
   }
 
   async function completeAppointment(appointment: Appointment) {
@@ -599,6 +658,26 @@ export function SchedulePage() {
               →
             </button>
           </div>
+
+          <label className={styles.historyFilter}>
+            <span>Histórico mensal</span>
+            <select
+              disabled={availableMonths.length === 0}
+              onChange={(event) => selectHistoryMonth(event.target.value)}
+              value={hasSelectedMonth ? selectedMonthKey : ''}
+            >
+              <option value="">
+                {availableMonths.length === 0
+                  ? 'Nenhum mês disponível'
+                  : 'Escolha um mês'}
+              </option>
+              {availableMonths.map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {isAdministrator && (
             <label className={styles.professionalFilter}>
