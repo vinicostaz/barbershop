@@ -13,6 +13,17 @@ export type AuthSession = {
   usuario: AuthUser
 }
 
+export type UserProfile = {
+  ativo: boolean
+  criadoEm: string
+  email: string
+  id: string
+  nome: string
+  pontosFidelidade: number
+  role: UserRole
+  telefone: string | null
+}
+
 export type LoginInput = {
   email: string
   senha: string
@@ -25,7 +36,27 @@ export type RegisterInput = {
   telefone?: string
 }
 
+export type UpdateProfileInput = {
+  email: string
+  nome: string
+  telefone?: string
+}
+
+function withAuthorization(token: string, options: RequestInit = {}) {
+  const headers = new Headers(options.headers)
+  headers.set('Authorization', `Bearer ${token}`)
+
+  return { ...options, headers }
+}
+
 export const authService = {
+  getProfile(token: string, signal?: AbortSignal) {
+    return apiRequest<UserProfile>(
+      '/auth/me',
+      withAuthorization(token, { signal }),
+    )
+  },
+
   login(input: LoginInput) {
     return apiRequest<AuthSession>('/auth/login', {
       body: JSON.stringify(input),
@@ -38,5 +69,15 @@ export const authService = {
       body: JSON.stringify({ ...input, role: 'CLIENTE' }),
       method: 'POST',
     })
+  },
+
+  updateProfile(input: UpdateProfileInput, token: string) {
+    return apiRequest<UserProfile>(
+      '/auth/me',
+      withAuthorization(token, {
+        body: JSON.stringify(input),
+        method: 'PATCH',
+      }),
+    )
   },
 }

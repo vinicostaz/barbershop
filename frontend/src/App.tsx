@@ -10,6 +10,7 @@ import { AuthPage } from './pages/AuthPage/AuthPage'
 import { HomePage } from './pages/HomePage/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage'
 import { ProfessionalsPage } from './pages/ProfessionalsPage/ProfessionalsPage'
+import { ProfilePage } from './pages/ProfilePage/ProfilePage'
 import { SchedulePage } from './pages/SchedulePage/SchedulePage'
 import { ServicesPage } from './pages/ServicesPage/ServicesPage'
 
@@ -20,6 +21,7 @@ const pageTitles: Record<string, string> = {
   '/cadastro': 'Criar conta | BarberShop',
   '/login': 'Entrar | BarberShop',
   '/profissionais': 'Profissionais | BarberShop',
+  '/perfil': 'Meu perfil | BarberShop',
   '/profissional': 'Área profissional | BarberShop',
   '/servicos': 'Serviços | BarberShop',
 }
@@ -50,6 +52,14 @@ function App() {
           />
           <Route path="/servicos" element={<ServicesPage />} />
           <Route path="/profissionais" element={<ProfessionalsPage />} />
+          <Route
+            path="/perfil"
+            element={
+              <ProfileRoute allowedRoles={['CLIENTE']}>
+                <ProfilePage />
+              </ProfileRoute>
+            }
+          />
           <Route
             path="/agendamentos"
             element={

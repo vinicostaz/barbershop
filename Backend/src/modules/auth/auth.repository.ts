@@ -16,4 +16,40 @@ export const authRepository = {
   }) {
     return db.usuario.create({ data });
   },
+
+  findProfileById(id: string) {
+    return db.usuario.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        role: true,
+        pontosFidelidade: true,
+        ativo: true,
+        criadoEm: true,
+      },
+    });
+  },
+
+  updateProfile(
+    id: string,
+    data: { nome: string; email: string; telefone: string | null }
+  ) {
+    return db.usuario.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        role: true,
+        pontosFidelidade: true,
+        ativo: true,
+        criadoEm: true,
+      },
+    });
+  },
 };

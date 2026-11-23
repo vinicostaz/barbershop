@@ -3,6 +3,8 @@ import type {
   AuthSession,
   LoginInput,
   RegisterInput,
+  UpdateProfileInput,
+  UserProfile,
 } from '../services/auth'
 
 export type AuthContextValue = {
@@ -11,6 +13,7 @@ export type AuthContextValue = {
   logout: () => void
   register: (input: RegisterInput) => Promise<AuthSession>
   session: AuthSession | null
+  updateProfile: (input: UpdateProfileInput) => Promise<UserProfile>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

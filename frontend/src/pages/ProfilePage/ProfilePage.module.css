@@ -1,0 +1,217 @@
+.page {
+  min-height: calc(100svh - 5rem);
+  padding-block: clamp(var(--space-12), 7vw, var(--space-24));
+  background:
+    radial-gradient(circle at 90% 8%, rgba(141, 167, 192, 0.2), transparent 26rem),
+    linear-gradient(150deg, var(--color-ivory-50), var(--color-ivory-100));
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-10);
+}
+
+.hero h1 {
+  margin: var(--space-4) 0 0;
+  color: var(--color-navy-950);
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 6vw, 4.8rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.hero > div > p {
+  max-width: 42rem;
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+  line-height: 1.7;
+}
+
+.pointsCard {
+  min-width: 13rem;
+  padding: var(--space-6);
+  color: var(--color-text-on-dark);
+  background: var(--color-navy-950);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.pointsCard span,
+.summary > span,
+.formCard header > span {
+  color: var(--color-blue-300);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.pointsCard strong {
+  display: block;
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-size: 3.2rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.pointsCard p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-sm);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+}
+
+.summary,
+.formCard,
+.dataState {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.summary,
+.formCard {
+  padding: clamp(var(--space-6), 4vw, var(--space-8));
+}
+
+.summary {
+  color: var(--color-text-on-dark);
+  background: var(--color-navy-900);
+}
+
+.summary h2,
+.formCard h2 {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 400;
+}
+
+.summary dl {
+  display: grid;
+  gap: 0;
+  margin: var(--space-8) 0 0;
+}
+
+.summary dl div {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.summary dt {
+  color: var(--color-text-on-dark-muted);
+  font-size: var(--font-size-xs);
+}
+
+.summary dd {
+  margin: 0;
+  font-weight: 750;
+}
+
+.formCard header > span {
+  color: var(--color-secondary);
+}
+
+.formCard h2 {
+  color: var(--color-text);
+}
+
+.formCard header p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  margin-top: var(--space-8);
+}
+
+.successMessage,
+.errorMessage {
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  line-height: 1.5;
+}
+
+.successMessage {
+  color: var(--color-success);
+  background: #f1f8f4;
+  border: 1px solid #bcd4c6;
+}
+
+.errorMessage {
+  color: var(--color-error);
+  background: #fff5f5;
+  border: 1px solid #e8b8b8;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.dataState {
+  min-height: 18rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-12);
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.dataState strong {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+}
+
+.dataState p {
+  margin: 0;
+}
+
+@media (max-width: 52rem) {
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pointsCard {
+    max-width: 18rem;
+  }
+}
+
+@media (max-width: 36rem) {
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
