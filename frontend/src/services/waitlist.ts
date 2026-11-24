@@ -140,6 +140,13 @@ export const waitlistService = {
     )
   },
 
+  markAllNotificationsRead(token: string) {
+    return apiRequest<{ atualizadas: number }>(
+      '/notificacoes/lidas',
+      withAuthorization(token, { method: 'PATCH' }),
+    )
+  },
+
   markNotificationRead(id: string, token: string) {
     return apiRequest<Notification>(
       `/notificacoes/${id}/lida`,

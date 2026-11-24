@@ -5,6 +5,7 @@ import {
   type AuthSession,
   type LoginInput,
   type RegisterInput,
+  type UpdateProfileInput,
   type UserRole,
 } from '../services/auth'
 import { UNAUTHORIZED_EVENT } from '../services/api'
@@ -74,6 +75,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return nextSession
   }
 
+  async function updateProfile(input: UpdateProfileInput) {
+    if (!session) throw new Error('Não autenticado.')
+
+    const profile = await authService.updateProfile(input, session.token)
+    saveSession({
+      ...session,
+      usuario: {
+        id: profile.id,
+        nome: profile.nome,
+        role: profile.role,
+      },
+    })
+    return profile
+  }
+
   function logout() {
     window.localStorage.removeItem(SESSION_STORAGE_KEY)
     setSession(null)
@@ -85,6 +101,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     logout,
     register,
     session,
+    updateProfile,
   }
 
   return <AuthContext value={value}>{children}</AuthContext>

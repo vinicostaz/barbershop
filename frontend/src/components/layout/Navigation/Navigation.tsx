@@ -35,7 +35,12 @@ const profileItems: Record<UserRole, NavigationItem[]> = {
     { label: 'Profissionais', to: '/profissionais' },
     { label: 'Minha agenda', to: '/profissional', variant: 'highlight' },
   ],
-  CLIENTE: publicItems,
+  CLIENTE: [
+    { label: 'Início', to: '/' },
+    { label: 'Serviços', to: '/servicos' },
+    { label: 'Profissionais', to: '/profissionais' },
+    { label: 'Agendamentos', to: '/agendamentos', variant: 'highlight' },
+  ],
 }
 
 export function Navigation({ items }: NavigationProps) {
@@ -95,9 +100,21 @@ export function Navigation({ items }: NavigationProps) {
 
         {session ? (
           <div className={styles.session}>
-            <span className={styles.userName} title={session.usuario.nome}>
-              Olá, {session.usuario.nome.split(' ')[0]}
-            </span>
+            {session.usuario.role === 'CLIENTE' ? (
+              <NavLink
+                aria-label="Abrir meu perfil"
+                className={styles.userProfileLink}
+                onClick={closeMenu}
+                title="Abrir meu perfil"
+                to="/perfil"
+              >
+                <span>Olá, {session.usuario.nome.split(' ')[0]}</span>
+              </NavLink>
+            ) : (
+              <span className={styles.userName} title={session.usuario.nome}>
+                Olá, {session.usuario.nome.split(' ')[0]}
+              </span>
+            )}
             <button className={styles.logout} onClick={handleLogout} type="button">
               Sair
             </button>

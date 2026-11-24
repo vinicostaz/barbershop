@@ -167,29 +167,43 @@
   box-shadow: 0 0.2rem 0.75rem rgba(12, 22, 38, 0.08);
 }
 
-.professionalFilter {
+.professionalFilter,
+.historyFilter {
   display: grid;
   gap: var(--space-2);
 }
 
 .professionalFilter {
   min-width: 15rem;
+}
+
+.historyFilter {
+  min-width: 13rem;
   margin-left: auto;
 }
 
-.professionalFilter span {
+.professionalFilter span,
+.historyFilter span {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   font-weight: 800;
 }
 
-.professionalFilter select {
+.professionalFilter select,
+.historyFilter select {
   min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
   color: var(--color-text);
   background: var(--color-surface-strong);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+.professionalFilter select:disabled,
+.historyFilter select:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .periodHeading {
@@ -715,7 +729,7 @@
     flex-wrap: wrap;
   }
 
-  .professionalFilter {
+  .historyFilter {
     margin-left: 0;
   }
 }
@@ -745,7 +759,8 @@
     align-items: stretch;
   }
 
-  .professionalFilter {
+  .professionalFilter,
+  .historyFilter {
     flex: 1 1 13rem;
   }
 

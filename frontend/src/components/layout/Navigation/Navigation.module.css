@@ -49,7 +49,8 @@
   border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.userName {
+.userName,
+.userProfileLink {
   max-width: 9rem;
   overflow: hidden;
   color: var(--color-text-on-dark-muted);
@@ -57,6 +58,24 @@
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.userProfileLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.userProfileLink:hover,
+.userProfileLink:focus-visible,
+.userProfileLink[aria-current='page'] {
+  color: var(--color-text-on-dark);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .logout {
@@ -141,7 +160,8 @@
     border-left: 0;
   }
 
-  .userName {
+  .userName,
+  .userProfileLink {
     max-width: none;
     padding-left: var(--space-2);
   }

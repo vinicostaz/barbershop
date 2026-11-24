@@ -78,8 +78,13 @@ async function main() {
     try { json = JSON.parse(texto); } catch { /* sem corpo */ }
     return { status: r.status, json, texto };
   }
-  const agendar = (clienteId: string, hora: string, status: "CONFIRMADO" | "CONCLUIDO" | "CANCELADO") => {
-    const dia = diaMais(-2);
+  const agendar = (
+    clienteId: string,
+    hora: string,
+    status: "CONFIRMADO" | "CONCLUIDO" | "CANCELADO",
+    deslocamentoDias = -2
+  ) => {
+    const dia = diaMais(deslocamentoDias);
     const [h, m] = hora.split(":").map(Number);
     const fim = `${String(h).padStart(2, "0")}:${String(m + 30).padStart(2, "0")}`;
     return db.agendamento.create({
@@ -95,7 +100,9 @@ async function main() {
     const concluido = await agendar(cliente.id, "09:00", "CONCLUIDO");
     const concluido2 = await agendar(cliente.id, "10:00", "CONCLUIDO");
     const doOutro = await agendar(outroCliente.id, "11:00", "CONCLUIDO");
-    const confirmado = await agendar(cliente.id, "12:00", "CONFIRMADO");
+    // Um CONFIRMADO no passado é concluído automaticamente pelo fluxo da aplicação.
+    // Mantemos este no futuro para testar de fato a rejeição de uma avaliação antecipada.
+    const confirmado = await agendar(cliente.id, "12:00", "CONFIRMADO", 2);
     const cancelado = await agendar(cliente.id, "13:00", "CANCELADO");
 
     console.log("\n== média sem avaliações ==");

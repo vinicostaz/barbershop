@@ -22,6 +22,12 @@ interface CriarUsuarioAdministrativoInput extends RegisterInput {
   role: "BARBEIRO" | "ADMINISTRADOR";
 }
 
+interface AtualizarPerfilInput {
+  nome: unknown;
+  email: unknown;
+  telefone: unknown;
+}
+
 function gerarToken(usuario: { id: string; role: string }) {
   return jwt.sign({ sub: usuario.id, role: usuario.role }, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn as SignOptions["expiresIn"],
@@ -97,6 +103,61 @@ export const authService = {
 
     const token = gerarToken(usuario);
     return { usuario: { id: usuario.id, nome: usuario.nome, role: usuario.role }, token };
+  },
+
+  async obterPerfil(usuarioId: string) {
+    const usuario = await authRepository.findProfileById(usuarioId);
+    if (!usuario) throw new AppError("Usuário não encontrado.", 404);
+    return usuario;
+  },
+
+  async atualizarPerfil(usuarioId: string, input: AtualizarPerfilInput) {
+    if (typeof input.nome !== "string" || input.nome.trim().length < 2) {
+      throw new AppError("O nome deve ter pelo menos 2 caracteres.");
+    }
+    if (
+      typeof input.email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())
+    ) {
+      throw new AppError("Informe um e-mail válido.");
+    }
+    if (
+      input.telefone !== undefined &&
+      input.telefone !== null &&
+      typeof input.telefone !== "string"
+    ) {
+      throw new AppError("Informe um telefone válido.");
+    }
+
+    const email = normalizarEmail(input.email);
+    const telefone =
+      typeof input.telefone === "string" ? input.telefone.trim() || null : null;
+    if (telefone && (telefone.length < 8 || telefone.length > 20)) {
+      throw new AppError("O telefone deve ter entre 8 e 20 caracteres.");
+    }
+
+    const usuarioComEmail = await authRepository.findByEmail(email);
+    if (usuarioComEmail && usuarioComEmail.id !== usuarioId) {
+      throw new AppError("Já existe um usuário cadastrado com este e-mail.", 409);
+    }
+
+    try {
+      return await authRepository.updateProfile(usuarioId, {
+        nome: input.nome.trim(),
+        email,
+        telefone,
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new AppError("Já existe um usuário cadastrado com este e-mail.", 409);
+      }
+      throw error;
+    }
   },
 
   async criarUsuarioAdministrativo(input: CriarUsuarioAdministrativoInput) {
